@@ -109,7 +109,7 @@ The application starts **closed**: with no user registered, nobody can log in. C
 from the terminal (the password is typed without echoing to the screen):
 
 ```bash
-docker compose exec backend python -m app.usuarios criar joao --nome "John Doe"
+docker compose exec backend python -m app.usuarios criar jdoe --nome "John Doe"
 ```
 
 Open `http://localhost:8080` (or `http://<machine-ip>:8080` from another device on the same network)
@@ -129,7 +129,7 @@ python -m venv .venv
 .venv\Scripts\activate            # Linux/Mac: source .venv/bin/activate
 pip install -r requirements.txt
 
-python -m app.usuarios criar joao --nome "John Doe"
+python -m app.usuarios criar jdoe --nome "John Doe"
 uvicorn app.main:app --reload
 ```
 
@@ -165,8 +165,8 @@ Environment variables (`.env`, see `.env.example`):
 
 ```bash
 docker compose exec backend python -m app.usuarios listar
-docker compose exec backend python -m app.usuarios senha joao       # resets and ends open sessions
-docker compose exec backend python -m app.usuarios desativar joao   # / ativar
+docker compose exec backend python -m app.usuarios senha jdoe       # resets and ends open sessions
+docker compose exec backend python -m app.usuarios desativar jdoe   # / ativar
 ```
 
 - **POSTs from another origin are rejected** (via the `Origin` header). Behind a proxy under a
