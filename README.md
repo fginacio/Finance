@@ -12,7 +12,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/Python-3.13-blue.svg" alt="Python 3.13">
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED.svg" alt="Docker Compose">
-  <img src="https://img.shields.io/badge/tests-pytest-0A9EDC.svg" alt="Tests: pytest">
+  <a href="https://github.com/fginacio/Finance/actions/workflows/tests.yml"><img src="https://github.com/fginacio/Finance/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
   <a href="https://github.com/fginacio/Finance/stargazers"><img src="https://img.shields.io/github/stars/fginacio/Finance?style=social" alt="GitHub stars"></a>
 </p>
 
