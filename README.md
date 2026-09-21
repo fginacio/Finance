@@ -1,4 +1,31 @@
-# Controle de Gastos
+<p align="center">
+  <img src="app/static/favicon.svg" alt="Controle de Gastos" width="72">
+</p>
+
+<h1 align="center">Controle de Gastos</h1>
+
+<p align="center">
+  <strong>Self-hosted personal/household finance tracker — transactions, budgets, bank statement import and Telegram alerts</strong>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/Python-3.13-blue.svg" alt="Python 3.13">
+  <img src="https://img.shields.io/badge/Docker-Compose-2496ED.svg" alt="Docker Compose">
+  <img src="https://img.shields.io/badge/tests-pytest-0A9EDC.svg" alt="Tests: pytest">
+</p>
+
+<p align="center">
+  <a href="#features">Features</a> &bull;
+  <a href="#screenshots">Screenshots</a> &bull;
+  <a href="#installation-docker">Install</a> &bull;
+  <a href="#configuration">Configuration</a> &bull;
+  <a href="#user-guide">User guide</a> &bull;
+  <a href="#telegram-notifications">Telegram</a> &bull;
+  <a href="#tests">Tests</a>
+</p>
+
+---
 
 Personal/household finance tracker: transactions, recurring bills, budget by category and by person,
 bank statement and credit card invoice import, reports with charts, and Telegram notifications. Light/dark
@@ -36,6 +63,16 @@ installing, you create the first user and set everything up from the screens (se
 Python + FastAPI + SQLite (no ORM) + Jinja2 + HTMX + Bootstrap, all served locally (no CDN). No
 JavaScript build step. `database/schema.sql` defines the database structure; existing databases are
 migrated automatically on startup (`migrar_db()` in `app/database.py`).
+
+## Screenshots
+
+Screens on a freshly installed, empty database (all screen labels are in Portuguese — the app's UI language):
+
+| Transactions | Reports |
+|---|---|
+| ![Lançamentos](screenshots/1-lancamentos.png) | ![Relatórios](screenshots/2-relatorios.png) |
+| **Recurring bills** | **Registrations** |
+| ![Recorrentes](screenshots/4-recorrentes.png) | ![Cadastros](screenshots/5-cadastros-categorias.png) |
 
 ## Installation (Docker)
 
