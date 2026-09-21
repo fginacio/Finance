@@ -13,6 +13,7 @@
   <img src="https://img.shields.io/badge/Python-3.13-blue.svg" alt="Python 3.13">
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED.svg" alt="Docker Compose">
   <img src="https://img.shields.io/badge/tests-pytest-0A9EDC.svg" alt="Tests: pytest">
+  <a href="https://github.com/fginacio/Finance/stargazers"><img src="https://img.shields.io/github/stars/fginacio/Finance?style=social" alt="GitHub stars"></a>
 </p>
 
 <p align="center">
@@ -377,6 +378,8 @@ Each test runs against a temporary SQLite database, isolated from the real one. 
 Issues and pull requests are welcome. Before opening a PR, run the test suite
 (`python -m pytest tests/ -v`) and, if possible, an equivalent of `scripts/auditar.ps1`
 (`pip-audit`, `trivy image`) to check for vulnerabilities.
+
+If this project is useful to you, consider giving it a ⭐ — it helps others find it.
 
 ## License
 
