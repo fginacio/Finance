@@ -1,0 +1,104 @@
+# Controle de Gastos - três camadas:
+#
+#   celular / PC  ->  frontend (nginx)  ->  backend (FastAPI)  ->  db (dados + backups)
+#      :8080            :8080 (publicada)     :8000 (só rede interna)   volume persistente
+#
+# Uso:  docker compose up -d --build
+# ATENÇÃO: nunca use "docker compose down -v": o -v apaga os volumes (seus dados e backups).
+
+name: controle-gastos
+
+services:
+  # ------------------------------------------------------------------ FRONTEND
+  # Único serviço acessível de fora. A porta é a MESMA no host e no contêiner (APP_PORT).
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    image: controle-gastos/frontend:latest
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:${APP_PORT:-8080}"
+    environment:
+      APP_PORT: ${APP_PORT:-8080}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [rede-app]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    logging: {driver: json-file, options: {max-size: "10m", max-file: "3"}}
+    init: true
+    pids_limit: 200
+
+  # ------------------------------------------------------------------ BACKEND
+  # FastAPI + SQLite. Sem porta publicada: só o frontend o alcança, pela rede interna.
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    image: controle-gastos/backend:latest
+    restart: unless-stopped
+    expose: ["8000"]
+    environment:
+      DATABASE_PATH: /app/data/controle-gastos.db
+      TZ: ${TZ:-America/Sao_Paulo}
+      COOKIE_SECURE: ${COOKIE_SECURE:-0}            # 1 quando houver HTTPS na frente (proxy)
+      ORIGENS_PERMITIDAS: ${ORIGENS_PERMITIDAS:-}   # host:porta extras aceitos nos POSTs (proxy com outro nome)
+      NOTIFICAR_DETALHES: ${NOTIFICAR_DETALHES:-1}  # 0 = aviso sem valor nem descrição
+      GASTO_ALTO: ${GASTO_ALTO:-500}                # aviso extra p/ lançamento novo >= este valor (0 desliga)
+    volumes:
+      - dados:/app/data
+    secrets: [telegram_token, telegram_chat]        # avisos de lançamentos no Telegram (ver app/avisos.py)
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [rede-app]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    logging: {driver: json-file, options: {max-size: "10m", max-file: "3"}}
+    init: true
+    pids_limit: 200
+
+  # ------------------------------------------------------------------ DB (camada de dados)
+  # Dono do volume persistente do banco. Faz backup diário consistente, verifica a integridade e mantém a retenção.
+  # Sem rede: não precisa falar com ninguém.
+  db:
+    build:
+      context: .
+      dockerfile: docker/db/Dockerfile
+    image: controle-gastos/db:latest
+    restart: unless-stopped
+    network_mode: none
+    environment:
+      TZ: ${TZ:-America/Sao_Paulo}
+      BACKUP_HORAS: ${BACKUP_HORAS:-24}
+      BACKUP_RETENCAO_DIAS: ${BACKUP_RETENCAO_DIAS:-30}
+      BACKUP_MINIMO: ${BACKUP_MINIMO:-7}
+    volumes:
+      - dados:/data
+      - backups:/backups
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    logging: {driver: json-file, options: {max-size: "10m", max-file: "3"}}
+    init: true
+    pids_limit: 200
+
+networks:
+  rede-app: {}
+
+# Segredos ficam FORA do projeto/OneDrive: %USERPROFILE%\.controle-gastos\ (telegram.token e telegram.chat). Sem eles, o aviso fica desligado.
+secrets:
+  telegram_token:
+    file: ${SEGREDOS_DIR:-${USERPROFILE:-.}/.controle-gastos}/telegram.token
+  telegram_chat:
+    file: ${SEGREDOS_DIR:-${USERPROFILE:-.}/.controle-gastos}/telegram.chat
+
+# Volumes nomeados e persistentes: sobrevivem a "down", a rebuilds e a atualizações das imagens.
+volumes:
+  dados:
+    name: ${VOLUME_DADOS:-controle-gastos-data}
+  backups:
+    name: ${VOLUME_BACKUPS:-controle-gastos-backups}

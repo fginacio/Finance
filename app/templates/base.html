@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#f3f3f3" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#202020" media="(prefers-color-scheme: dark)">
+    <title>{% block title %}Controle de Gastos{% endblock %}</title>
+
+    {% include "_tema.html" %}
+
+    <link href="/static/vendor/bootstrap-5.3.3/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="stylesheet" href="/static/custom.css?v=7">
+</head>
+<body>
+    {% from "_macros.html" import icon %}
+    {% set caminho = request.url.path %}
+    {% set a_validar = contar_a_validar() %}
+    {% set duplicadas = contar_duplicidades() %}
+    {% set em_formulario = caminho == '/lancamentos/novo' or caminho.endswith('/editar') or caminho == '/recorrentes/novo' %}
+
+    <header class="appbar">
+        <button class="icon-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#menuPrincipal"
+                aria-controls="menuPrincipal" aria-label="Abrir menu">{{ icon('menu') }}</button>
+        <a class="brand" href="/">{{ icon('carteira') }}<span class="marca-texto">Controle de Gastos</span></a>
+        <div class="appbar-actions">
+            {% if a_validar %}<a href="/validar" class="btn btn-warning btn-sm" title="Lançamentos importados aguardando validação">{{ icon('validar') }}{{ a_validar }}<span class="chip-rotulo"> a validar</span></a>{% endif %}
+            {% if duplicadas %}<a href="/duplicidades" class="btn btn-danger btn-sm" title="Possíveis lançamentos duplicados">{{ icon('duplicidades') }}{{ duplicadas }}<span class="chip-rotulo"> duplicidade(s)</span></a>{% endif %}
+            <a href="/lancamentos/novo" class="btn btn-primary btn-sm d-none d-sm-inline-flex">{{ icon('novo') }}Novo gasto</a>
+        </div>
+    </header>
+
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="menuPrincipal" aria-labelledby="menuPrincipalTitulo">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title d-flex align-items-center gap-2 mb-0" id="menuPrincipalTitulo">{{ icon('carteira') }} Controle de Gastos</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
+        </div>
+        <div class="offcanvas-body">
+            <ul class="nav nav-fluent list-unstyled">
+                <li><a class="nav-link {{ 'active' if caminho == '/' }}" href="/">{{ icon('painel') }}Painel</a></li>
+                <li><a class="nav-link {{ 'active' if caminho.startswith('/lancamentos') }}" href="/lancamentos">{{ icon('lancamentos') }}Lançamentos</a></li>
+                <li><a class="nav-link {{ 'active' if caminho.startswith('/importar') }}" href="/importar">{{ icon('importar') }}Importar</a></li>
+                {% set em_revisao = caminho.startswith('/validar') or caminho.startswith('/duplicidades') %}
+                <li>
+                    <a class="nav-link {{ 'active' if em_revisao }}" data-bs-toggle="collapse" href="#menu-revisar" role="button"
+                       aria-expanded="{{ 'true' if em_revisao else 'false' }}" aria-controls="menu-revisar">{{ icon('validar') }}Revisar
+                        {% if a_validar or duplicadas %}<span class="badge text-bg-warning">{{ a_validar + duplicadas }}</span>{% endif %}
+                        <span class="chevron {{ 'ms-auto' if not (a_validar or duplicadas) }}" aria-hidden="true">&rsaquo;</span></a>
+                    <ul id="menu-revisar" class="nav-sub list-unstyled collapse {{ 'show' if em_revisao }}">
+                        <li><a class="nav-link {{ 'active' if caminho.startswith('/validar') }}" href="/validar">A validar
+                            {% if a_validar %}<span class="badge text-bg-warning">{{ a_validar }}</span>{% endif %}</a></li>
+                        <li><a class="nav-link {{ 'active' if caminho.startswith('/duplicidades') }}" href="/duplicidades">Duplicidades
+                            {% if duplicadas %}<span class="badge text-bg-danger">{{ duplicadas }}</span>{% endif %}</a></li>
+                    </ul>
+                </li>
+                <li><a class="nav-link {{ 'active' if caminho.startswith('/relatorios') }}" href="/relatorios">{{ icon('relatorios') }}Relatórios</a></li>
+                {% set em_config = caminho.startswith('/recorrentes') or caminho.startswith('/cadastros') %}
+                <li>
+                    <a class="nav-link {{ 'active' if em_config }}" data-bs-toggle="collapse" href="#menu-config" role="button"
+                       aria-expanded="{{ 'true' if em_config else 'false' }}" aria-controls="menu-config">{{ icon('cadastros') }}Configurações
+                        <span class="chevron ms-auto" aria-hidden="true">&rsaquo;</span></a>
+                    <ul id="menu-config" class="nav-sub list-unstyled collapse {{ 'show' if em_config }}">
+                        <li><a class="nav-link {{ 'active' if caminho.startswith('/recorrentes') }}" href="/recorrentes">Recorrentes</a></li>
+                        <li><a class="nav-link {{ 'active' if caminho.startswith('/cadastros') }}" href="/cadastros">Cadastros</a></li>
+                    </ul>
+                </li>
+                <li><a class="nav-link {{ 'active' if caminho.startswith('/sobre') }}" href="/sobre">{{ icon('info') }}Sobre</a></li>
+            </ul>
+        </div>
+        {% if request.state.usuario %}
+        <div class="offcanvas-footer">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="avatar">{{ request.state.usuario['nome'][:1]|upper }}</span>
+                <div class="lh-sm">
+                    <div class="fw-semibold">{{ request.state.usuario['nome'] }}</div>
+                    <div class="small text-muted">@{{ request.state.usuario['usuario'] }}</div>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="/conta" class="btn btn-outline-secondary btn-sm flex-fill">{{ icon('pessoa') }}Minha conta</a>
+                <form method="post" action="/logout" class="flex-fill">
+                    <button class="btn btn-outline-secondary btn-sm w-100">{{ icon('sair') }}Sair</button>
+                </form>
+            </div>
+            <div class="small text-muted text-center mt-2">Versão {{ versao_app }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <main class="container {% block wide %}{% endblock %} pt-4 pb-5">
+        {% block content %}{% endblock %}
+    </main>
+
+    {# Botão flutuante: só aparece no celular (CSS por data-device) e não nas telas de formulário. #}
+    {% if not em_formulario %}<a href="/lancamentos/novo" class="fab" aria-label="Novo gasto" title="Novo gasto">{{ icon('novo') }}</a>{% endif %}
+
+    <script src="/static/vendor/bootstrap-5.3.3/bootstrap.bundle.min.js"></script>
+    <script src="/static/vendor/htmx-2.0.4/htmx.min.js"></script>
+    <script>
+    /* Tabelas .tabela-cartoes viram cartões no celular: copia o texto do cabeçalho para cada célula (data-label). */
+    document.querySelectorAll('table.tabela-cartoes').forEach(function (t) {
+        var rotulos = Array.prototype.map.call(t.querySelectorAll('thead th'), function (th) { return th.textContent.trim(); });
+        t.querySelectorAll('tbody tr').forEach(function (tr) {
+            Array.prototype.forEach.call(tr.children, function (td, i) {
+                if (td.tagName === 'TD' && td.colSpan === 1 && !td.hasAttribute('data-label')) { td.setAttribute('data-label', rotulos[i] || ''); }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% from "_macros.html" import brl, icon %}
+{% block title %}Verificar duplicidades - Controle de Gastos{% endblock %}
+
+{# Um lado do par: dados do lançamento e o botão para mantê-lo #}
+{% macro lado(l, outro, rotulo, acao, par) %}
+<div class="col-md-6">
+    <div class="border rounded p-3 h-100 d-flex flex-column">
+        <div class="d-flex justify-content-between">
+            <span class="badge text-bg-secondary">{{ rotulo }} · #{{ l["id"] }}</span>
+            <span>
+                <span class="badge {{ 'text-bg-info' if l['origem'] == 'extrato' else ('text-bg-primary' if l['origem'] == 'fatura' else 'text-bg-light border') }}">{{ l["origem"] or "digitado" }}</span>
+                {% if not l["validado"] %}<span class="badge text-bg-warning">a validar</span>{% endif %}
+            </span>
+        </div>
+        <div class="fs-5 fw-bold mt-2">{{ brl(l["valor"]) }} <span class="fs-6 fw-normal text-muted">em {{ l["data"][8:] }}/{{ l["data"][5:7] }}/{{ l["data"][:4] }}</span></div>
+        <div>{{ l["descricao"] or "(sem descrição)" }}</div>
+        <div class="small text-muted mb-3">
+            {{ l["categoria"] }} · {{ l["forma_pagamento"] }}{% if l["cartao"] %} ({{ l["cartao"] }}){% endif %} · {{ l["titular"] or "sem titular" }} · {{ l["status"] }}
+        </div>
+        <div class="mt-auto d-flex gap-2 align-items-center">
+            <form method="post" action="/duplicidades/resolver"
+                  onsubmit="return confirm('Manter #{{ l["id"] }} e REMOVER #{{ outro["id"] }}?')">
+                <input type="hidden" name="a" value="{{ par['a']['id'] }}"><input type="hidden" name="b" value="{{ par['b']['id'] }}">
+                <input type="hidden" name="acao" value="{{ acao }}">
+                <button class="btn btn-sm btn-primary">{{ icon('ok') }}Manter este e remover o outro</button>
+            </form>
+            <a href="/lancamentos/{{ l['id'] }}/editar" class="btn btn-sm btn-outline-secondary">{{ icon('editar') }}Editar</a>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+    <h1 class="h4 mb-0">Verificar duplicidades <span class="badge text-bg-warning">{{ pares|length }}</span></h1>
+</div>
+<p class="text-muted small">Varre <strong>todos</strong> os lançamentos, inclusive os já validados, atrás de pares com o <strong>mesmo valor</strong> em
+    datas próximas (até 3 dias). Escolha qual manter: ao remover uma linha que veio do <strong>extrato</strong>, o lançamento mantido
+    (fatura ou pendente) passa a valer com a <strong>data e a forma de pagamento do banco</strong>, e a linha removida não volta em novas importações.</p>
+
+{% for p in pares %}
+<div class="card shadow-sm mb-3"><div class="card-body">
+    <div class="mb-2 small">
+        {% for m in p["motivos"] %}<span class="badge {{ 'text-bg-danger' if m == 'mesma data' else 'text-bg-secondary' }}">{{ m }}</span> {% endfor %}
+    </div>
+    <div class="row g-3">
+        {{ lado(p["a"], p["b"], "A", "manter_a", p) }}
+        {{ lado(p["b"], p["a"], "B", "manter_b", p) }}
+    </div>
+    <form method="post" action="/duplicidades/resolver" class="mt-3">
+        <input type="hidden" name="a" value="{{ p['a']['id'] }}"><input type="hidden" name="b" value="{{ p['b']['id'] }}">
+        <input type="hidden" name="acao" value="diferentes">
+        <button class="btn btn-sm btn-outline-secondary">São gastos diferentes (não avisar de novo)</button>
+    </form>
+</div></div>
+{% else %}
+<div class="alert alert-success">{{ icon('ok') }} Nenhuma duplicidade suspeita nos lançamentos.</div>
+{% endfor %}
+
+{% endblock %}

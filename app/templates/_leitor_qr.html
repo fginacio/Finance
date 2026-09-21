@@ -1,0 +1,28 @@
+{# Leitor de QR de nota fiscal: foto do QR -> lido no navegador (jsQR) -> POST /lancamentos/nota #}
+{% from "_macros.html" import icon %}
+<div class="card shadow-sm mb-3">
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <div class="flex-grow-1">
+                <div class="fw-semibold">Tem a nota fiscal?</div>
+                <div class="small text-muted">Fotografe o QR da nota: o app busca valor, data e local e preenche o lançamento.</div>
+            </div>
+            <form id="form-qr" method="post" action="/lancamentos/nota" class="d-flex gap-2 align-items-center">
+                <input type="hidden" name="conteudo" id="conteudo">
+                <input type="file" id="foto" accept="image/*" capture="environment" class="d-none">
+                <button type="button" class="btn btn-outline-primary" id="tirar-foto">{{ icon('novo') }}Ler QR da nota</button>
+                <label for="foto" class="btn btn-outline-secondary mb-0" title="Escolher uma foto da galeria">Galeria</label>
+            </form>
+        </div>
+        <div id="qr-status" class="small mt-2 text-muted" role="status"></div>
+        <details class="mt-2">
+            <summary class="small">Ou cole o link do QR / a chave de acesso</summary>
+            <form method="post" action="/lancamentos/nota" class="mt-2 d-flex gap-2">
+                <input type="text" name="conteudo" class="form-control" placeholder="https://... ou 44 dígitos" required>
+                <button class="btn btn-outline-primary">Consultar</button>
+            </form>
+        </details>
+    </div>
+</div>
+<script src="/static/vendor/jsqr-1.4.0/jsQR.js"></script>
+<script src="/static/nota.js?v=1"></script>

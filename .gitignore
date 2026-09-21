@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Dados locais (o banco SQLite não vai pro repositório)
+data/
+*.db
+*.db-shm
+*.db-wal
+*.db.enc
+backups/
+
+# Configuração local
+.env
+.DS_Store

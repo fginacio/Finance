@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% from "_macros.html" import brl, nomemes, pct, icon %}
+{% block title %}Relatórios - Controle de Gastos{% endblock %}
+
+{# Tabela do período: primeira coluna fixa, valores zerados esmaecidos #}
+{% macro matriz(titulo, linhas, com_orcado=false, total_geral=none) %}
+<h2 class="h6 mt-4 mb-2">{{ titulo }}</h2>
+<div class="table-responsive">
+<table class="table table-sm table-hover align-middle small mb-0 tabela-meses">
+    <thead>
+        <tr>
+            <th class="col-fixa">{{ "Categoria" if com_orcado else "" }}</th>
+            {% if com_orcado %}<th>Grupo</th>{% endif %}
+            {% for m in r.meses %}<th class="text-end {{ 'table-primary' if m == mes }}">{{ nomemes(m) }}</th>{% endfor %}
+            <th class="text-end">Total</th>
+            {% if com_orcado %}<th class="text-end">Orçado {{ meses }}m</th><th class="text-end" title="Gasto de {{ nomemes(mes) }} sobre o orçamento mensal">Real/orç. (mês)</th>{% endif %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for l in linhas %}
+        <tr>
+            <td class="col-fixa text-nowrap">{{ l.nome }}</td>
+            {% if com_orcado %}<td class="text-muted text-nowrap">{{ l.grupo }}</td>{% endif %}
+            {% for v in l.valores %}<td class="text-end {{ 'text-muted' if not v }}">{{ "{:,.2f}".format(v).replace(",", "X").replace(".", ",").replace("X", ".") if v else "-" }}</td>{% endfor %}
+            <td class="text-end fw-semibold">{{ brl(l.total) }}</td>
+            {% if com_orcado %}
+            <td class="text-end text-muted">{{ brl(l.orcado) if l.orcado else "-" }}</td>
+            <td class="text-end {{ 'text-danger fw-semibold' if l.orcado_mensal and l.valores[-1] > l.orcado_mensal }}">{{ pct(l.valores[-1] / l.orcado_mensal * 100) if l.orcado_mensal else "-" }}</td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+        {% if total_geral %}
+        <tr class="table-light fw-bold">
+            <td class="col-fixa">TOTAL GERAL</td>
+            {% if com_orcado %}<td></td>{% endif %}
+            {% for v in total_geral.valores %}<td class="text-end">{{ "{:,.2f}".format(v).replace(",", "X").replace(".", ",").replace("X", ".") if v else "-" }}</td>{% endfor %}
+            <td class="text-end">{{ brl(total_geral.total) }}</td>
+            {% if com_orcado %}<td class="text-end">{{ brl(linhas|sum(attribute="orcado")) }}</td><td></td>{% endif %}
+        </tr>
+        {% endif %}
+    </tbody>
+</table>
+</div>
+{% endmacro %}
+
+{% block wide %}wide{% endblock %}
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <h1 class="h4 mb-0">Relatórios</h1>
+    <form method="get" class="d-flex flex-wrap gap-3 align-items-center">
+        <input type="hidden" name="aba" value="{{ aba }}">
+        <div class="d-flex flex-wrap gap-3 align-items-center" role="group" aria-label="Filtrar por titular">
+            <span class="small text-muted">Titular:</span>
+            {% for t in r.todos %}
+            <div class="form-check mb-0"><input class="form-check-input" type="checkbox" name="titular" value="{{ t }}" id="tit-{{ loop.index }}"
+                 {{ 'checked' if t in r.sel }} onchange="this.form.submit()"><label class="form-check-label" for="tit-{{ loop.index }}">{{ t }}</label></div>
+            {% endfor %}
+        </div>
+        {% if aba == "resumo" %}
+        <div class="d-flex flex-nowrap gap-2 align-items-center">
+            <label class="small text-muted mb-0 text-nowrap" for="sel-meses">Período</label>
+            <select class="form-select form-select-sm w-auto" name="meses" id="sel-meses" onchange="this.form.submit()">
+                {% for opcao in (1, 3, 6, 12) %}<option value="{{ opcao }}" {{ 'selected' if opcao == meses }}>{{ opcao }} {{ "mês" if opcao == 1 else "meses" }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="d-flex flex-nowrap gap-2 align-items-center">
+            <label class="small text-muted mb-0 text-nowrap">até</label>
+            <input type="month" name="mes" value="{{ mes }}" class="form-control" onchange="this.form.submit()">
+        </div>
+        {% else %}
+        <input type="hidden" name="meses" value="{{ meses }}">
+        <input type="month" name="mes" value="{{ mes }}" class="form-control" aria-label="Mês" onchange="this.form.submit()">
+        {% endif %}
+    </form>
+</div>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><a class="nav-link {{ 'active' if aba == 'resumo' }}" href="/relatorios?aba=resumo&mes={{ mes }}&meses={{ meses }}{{ filtro_url }}">Resumo mensal</a></li>
+    <li class="nav-item"><a class="nav-link {{ 'active' if aba == 'analise' }}" href="/relatorios?aba=analise&mes={{ mes }}&meses={{ meses }}{{ filtro_url }}">Análise</a></li>
+</ul>
+
+{% if r.filtrado %}
+<div class="alert alert-info py-2 small">Mostrando só: <strong>{{ r.sel|join(", ") }}</strong>. O orçamento por categoria é da família toda, por isso não é comparado neste filtro.
+    <a href="/relatorios?aba={{ aba }}&mes={{ mes }}&meses={{ meses }}">Mostrar todos</a></div>
+{% endif %}
+
+{% if aba == "resumo" %}
+{% set c = r.cards %}
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3">
+        <div class="card shadow-sm h-100"><div class="card-body py-3">
+            <div class="small text-muted">Total em {{ nomemes(mes) }}</div>
+            <div class="h5 mb-0">{{ brl(c.total_mes) }}</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card shadow-sm h-100"><div class="card-body py-3">
+            <div class="small text-muted">Vs. mês anterior</div>
+            {% if c.variacao_pct is none %}
+            <div class="h5 mb-0 text-muted">-</div>
+            {% else %}
+            <div class="h5 mb-0 {{ 'text-danger' if c.variacao > 0 else 'text-success' }}">{{ '+' if c.variacao > 0 }}{{ pct(c.variacao_pct) }}</div>
+            <div class="small text-muted">{{ '+' if c.variacao > 0 }}{{ brl(c.variacao) }}</div>
+            {% endif %}
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card shadow-sm h-100"><div class="card-body py-3">
+            <div class="small text-muted">Orçamento do mês</div>
+            {% if c.orcamento_pct is none %}
+            <div class="h5 mb-0 text-muted">-</div>
+            {% else %}
+            <div class="h5 mb-0 {{ 'text-danger' if c.orcamento_pct > 100 else '' }}">{{ pct(c.orcamento_pct) }}</div>
+            <div class="small text-muted">de {{ brl(c.orcamento_mes) }}</div>
+            {% endif %}
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card shadow-sm h-100"><div class="card-body py-3">
+            <div class="small text-muted">Maior categoria</div>
+            {% if c.maior_categoria %}
+            <div class="h6 mb-0 text-truncate" title="{{ c.maior_categoria.nome }}">{{ c.maior_categoria.nome }}</div>
+            <div class="small text-muted">{{ brl(c.maior_categoria.valor) }} ({{ pct(c.maior_categoria.pct) }})</div>
+            {% else %}<div class="h5 mb-0 text-muted">-</div>{% endif %}
+        </div></div>
+    </div>
+</div>
+
+{% set g = r.grafico %}
+<div class="card shadow-sm mb-3"><div class="card-body">
+    <h2 class="h6 mb-3">Gastos por mês{% if r.filtrado %} ({{ r.sel|join(", ") }}){% endif %}</h2>
+    {% if g.maximo %}
+    <div style="height: 260px"><canvas id="graficoMeses"></canvas></div>
+    <script>window.__graficoMeses = {{ g|tojson }};</script>
+    {% else %}<span class="text-muted">Sem gastos no período.</span>{% endif %}
+</div></div>
+
+<div class="card shadow-sm"><div class="card-body">
+    <p class="text-muted small mb-0">Período: {{ nomemes(r.meses[0]) }} a {{ nomemes(r.meses[-1]) }}. Os blocos de cartão e banco somam só
+        lançamentos em <em>Cartão de crédito</em> com o cartão informado.</p>
+    {{ matriz("Por categoria", r.por_categoria, true, r.total_geral) }}
+    {% for titulo, linhas in r.blocos %}
+    {{ matriz(titulo, linhas) }}
+    {% endfor %}
+</div></div>
+
+{% else %}
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h6">Top 8 categorias do período</h2>
+            {% if r.top %}
+            <div class="row g-2 align-items-center">
+                <div class="col-5"><div style="height: 200px"><canvas id="graficoTop"></canvas></div></div>
+                <div class="col-7">
+                    {% for t in r.top %}
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between small"><span>{{ loop.index }}. {{ t.nome }} <span class="text-muted">({{ t.grupo }})</span></span>
+                            <span>{{ brl(t.total) }} <span class="text-muted">({{ pct(t.pct) }})</span></span></div>
+                        <div class="progress" style="height: 6px"><div class="progress-bar" style="width: {{ t.pct }}%"></div></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <script>window.__graficoTop = {{ r.top|tojson }};</script>
+            {% else %}<span class="text-muted">Sem lançamentos no período.</span>{% endif %}
+        </div></div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h6">Concentração por cartão de crédito</h2>
+            <table class="table table-sm align-middle small mb-0 tabela-cartoes">
+                <thead><tr><th>Cartão</th><th>Titular</th><th class="text-end">Total</th><th class="text-end">% do cartão</th></tr></thead>
+                <tbody>
+                {% for c in r.concentracao %}
+                <tr class="{{ 'text-muted' if not c.total }}"><td>{{ c.cartao }}</td><td>{{ c.titular }}</td>
+                    <td class="text-end">{{ brl(c.total) }}</td><td class="text-end">{{ pct(c.pct) }}</td></tr>
+                {% endfor %}
+                <tr class="fw-bold table-light"><td colspan="2">TOTAL EM CARTÃO</td><td class="text-end">{{ brl(r.total_cartao) }}</td><td></td></tr>
+                </tbody>
+            </table>
+        </div></div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h6">Categorias que estouraram o orçamento no período</h2>
+            {% if r.estouros %}
+            <table class="table table-sm align-middle small mb-0 tabela-cartoes">
+                <thead><tr><th>Categoria</th><th class="text-end">Orçado {{ meses }}m</th><th class="text-end">Realizado</th><th class="text-end">Excesso</th></tr></thead>
+                <tbody>
+                {% for e in r.estouros %}
+                <tr><td>{{ e.nome }}</td><td class="text-end">{{ brl(e.orcado) }}</td><td class="text-end">{{ brl(e.total) }} <span class="text-muted">({{ pct(e.pct) }})</span></td>
+                    <td class="text-end text-danger fw-semibold">{{ brl(e.excesso) }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}<span class="text-success">{{ icon('ok') }} Nenhuma categoria estourou o orçamento no período.</span>{% endif %}
+        </div></div>
+    </div>
+</div>
+{% endif %}
+
+<script src="/static/vendor/chart.js-4.4.4/chart.umd.min.js"></script>
+<script>
+(function () {
+    var MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+    function nomemes(m) { return MESES[parseInt(m.slice(5, 7), 10) - 1] + "/" + m.slice(2, 4); }
+    function brl(v) { return "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    var estilo = getComputedStyle(document.documentElement);
+    var corTexto = estilo.getPropertyValue("--bs-body-color").trim() || "#212529";
+    var corGrade = estilo.getPropertyValue("--bs-border-color-translucent").trim() || "rgba(0,0,0,.1)";
+    Chart.defaults.color = corTexto;
+    Chart.defaults.font.family = estilo.getPropertyValue("--bs-body-font-family") || Chart.defaults.font.family;
+
+    var elMeses = document.getElementById("graficoMeses");
+    if (elMeses && window.__graficoMeses) {
+        var g = window.__graficoMeses;
+        new Chart(elMeses, {
+            type: "bar",
+            data: {
+                labels: g.meses.map(nomemes),
+                datasets: g.series.map(function (s) {
+                    return { label: s.nome, data: s.valores, backgroundColor: s.cor, borderRadius: 3, maxBarThickness: 40 };
+                })
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true, grid: { display: false } },
+                    y: { stacked: true, grid: { color: corGrade }, ticks: { callback: function (v) { return brl(v); } } }
+                },
+                plugins: {
+                    legend: { position: "bottom" },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) { return ctx.dataset.label + ": " + brl(ctx.parsed.y); },
+                            footer: function (items) { return "Total: " + brl(items.reduce(function (s, i) { return s + i.parsed.y; }, 0)); }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    var elTop = document.getElementById("graficoTop");
+    if (elTop && window.__graficoTop) {
+        var t = window.__graficoTop;
+        var cores = ["#0d6efd", "#198754", "#fd7e14", "#6f42c1", "#dc3545", "#20c997", "#6c757d", "#d63384"];
+        new Chart(elTop, {
+            type: "doughnut",
+            data: {
+                labels: t.map(function (c) { return c.nome; }),
+                datasets: [{ data: t.map(function (c) { return c.total; }), backgroundColor: cores }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: function (ctx) { return ctx.label + ": " + brl(ctx.parsed); } } }
+                }
+            }
+        });
+    }
+
+})();
+</script>
+
+{% endblock %}

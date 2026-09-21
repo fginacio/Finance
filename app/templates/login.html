@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#f3f3f3" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#202020" media="(prefers-color-scheme: dark)">
+    <meta name="robots" content="noindex">
+    <title>Entrar - Controle de Gastos</title>
+    {% include "_tema.html" %}
+    <link href="/static/vendor/bootstrap-5.3.3/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="stylesheet" href="/static/custom.css?v=7">
+</head>
+<body>
+    {% from "_macros.html" import icon %}
+    <main class="login-wrap">
+        <div class="card login-card">
+            <div class="card-body p-4">
+                <div class="login-marca">{{ icon('carteira') }}</div>
+                <h1 class="h4 text-center mb-1">Controle de Gastos</h1>
+                <p class="text-center text-muted small mb-4">Entre para continuar</p>
+
+                {% if sem_usuarios %}
+                <div class="alert alert-warning small">
+                    <strong>Nenhum usuário cadastrado.</strong> O acesso está fechado até você criar o primeiro pelo terminal,
+                    na pasta do projeto:<br>
+                    <code>python -m app.usuarios criar joao --nome "João"</code><br>
+                    (no Docker: <code>docker compose exec backend python -m app.usuarios criar joao --nome "João"</code>)
+                </div>
+                {% endif %}
+                {% if erro %}<div class="alert alert-danger small py-2" role="alert">{{ erro }}</div>{% endif %}
+
+                <form method="post" action="/login" autocomplete="on">
+                    <input type="hidden" name="next" value="{{ next }}">
+                    <div class="mb-3">
+                        <label class="form-label" for="usuario">Usuário</label>
+                        <input class="form-control" id="usuario" name="usuario" value="{{ usuario }}" autocomplete="username"
+                               autocapitalize="none" spellcheck="false" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="senha">Senha</label>
+                        <input class="form-control" type="password" id="senha" name="senha" autocomplete="current-password" required>
+                    </div>
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" name="lembrar" id="lembrar" value="1">
+                        <label class="form-check-label" for="lembrar">Manter conectado por 30 dias neste aparelho</label>
+                    </div>
+                    <button class="btn btn-primary w-100">Entrar</button>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

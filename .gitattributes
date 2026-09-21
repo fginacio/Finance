@@ -1,0 +1,6 @@
+# Scripts e configs de contêiner precisam de fim de linha LF (o Linux não executa CRLF).
+*.sh text eol=lf
+*.template text eol=lf
+*.conf text eol=lf
+Dockerfile text eol=lf
+docker-compose.yml text eol=lf

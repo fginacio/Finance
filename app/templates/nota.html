@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Nota fiscal - Controle de Gastos{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Nota fiscal</h1>
+{% set r = resultado %}
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h2 class="h5">Resultado</h2>
+        {% if r.erro %}<div class="alert alert-warning">{{ r.erro }}</div>{% endif %}
+
+        {% if r.chave %}
+        <div class="border rounded p-2 mb-3 d-flex flex-wrap align-items-center gap-2">
+            <div class="flex-grow-1">
+                <div class="small text-muted">Chave de acesso (para colar no Méliuz)</div>
+                <div class="text-break fw-semibold" id="chave-texto">{{ r.chave }}</div>
+                <div class="small" id="chave-status" role="status"></div>
+            </div>
+            <button type="button" class="btn btn-outline-primary" id="copiar-chave">Copiar chave</button>
+        </div>
+        {% endif %}
+
+        <dl class="row small mb-3">
+            <dt class="col-sm-3">Lido do QR</dt><dd class="col-sm-9 text-break">{{ r.conteudo }}</dd>
+            {% if r.chave %}<dt class="col-sm-3">Chave de acesso</dt><dd class="col-sm-9 text-break">{{ r.chave }}</dd>{% endif %}
+            {% if r.chave_info %}
+            <dt class="col-sm-3">Pela chave</dt>
+            <dd class="col-sm-9">Estado {{ r.chave_info.uf }} · emitida em {{ r.chave_info.mes_ano }} · CNPJ {{ r.chave_info.cnpj }} · nota nº {{ r.chave_info.numero }} (série {{ r.chave_info.serie }})</dd>
+            {% endif %}
+            {% if r.info %}
+            <dt class="col-sm-3">Consulta</dt>
+            <dd class="col-sm-9">HTTP {{ r.info.status or "-" }} · {{ r.info.bytes }} bytes · {{ r.info.url_final[:120] }}</dd>
+            {% endif %}
+        </dl>
+
+        {% if r.cadastrada %}
+        <div class="alert alert-danger">Esta nota <strong>já está cadastrada</strong>: lançamento
+            <a href="/lancamentos/{{ r.cadastrada['id'] }}/editar">#{{ r.cadastrada['id'] }}</a>
+            de {{ r.cadastrada['data'][8:] }}/{{ r.cadastrada['data'][5:7] }}/{{ r.cadastrada['data'][:4] }},
+            R$ {{ '%.2f'|format(r.cadastrada['valor'])|replace('.', ',') }}.</div>
+        {% elif r.lida_antes %}
+        <div class="alert alert-warning">Esta nota <strong>já foi lida antes</strong> (em {{ r.lida_antes }} UTC), mas não chegou a ser cadastrada.</div>
+        {% endif %}
+        {% if r.parecidos %}
+        <div class="alert alert-warning small">Já existem lançamentos com o mesmo valor em datas próximas (pode ser o mesmo gasto vindo do extrato ou da fatura):
+            <ul class="mb-0">{% for p in r.parecidos %}
+                <li><a href="/lancamentos/{{ p['id'] }}/editar">#{{ p['id'] }}</a> · {{ p['data'][8:] }}/{{ p['data'][5:7] }} · {{ p['descricao'] or '(sem descrição)' }} · {{ p['origem'] or 'digitado' }}</li>
+            {% endfor %}</ul></div>
+        {% endif %}
+        {% if r.categoria %}<div class="small text-muted mb-2">Categoria sugerida (do último gasto neste local): <strong>{{ r.categoria }}</strong></div>{% endif %}
+
+        {% if r.dados %}
+        {% set d = r.dados %}
+        <h3 class="h6">Encontrado na página</h3>
+        <ul class="mb-3">
+            <li>Valor: <strong>{{ ("R$ " ~ d.valor|replace(".", ",")) if d.valor else "não encontrado" }}</strong></li>
+            <li>Data: <strong>{{ (d.data[8:] ~ "/" ~ d.data[5:7] ~ "/" ~ d.data[:4]) if d.data else "não encontrada" }}</strong></li>
+            <li>Estabelecimento: <strong>{{ d.estabelecimento or "não encontrado" }}</strong></li>
+        </ul>
+        {% if d.captcha %}<div class="alert alert-info small">A página parece pedir captcha; a leitura automática pode não funcionar neste estado.</div>{% endif %}
+
+        <form method="post" action="/lancamentos/nota/lancar" class="mb-3">
+            <input type="hidden" name="data" value="{{ d.data or '' }}">
+            <input type="hidden" name="valor" value="{{ (d.valor|replace('.', ',')) if d.valor else '' }}">
+            <input type="hidden" name="descricao" value="{{ d.estabelecimento or (r.chave_info.cnpj if r.chave_info else '') }}">
+            <input type="hidden" name="chave" value="{{ r.chave or '' }}">
+            <button class="btn {{ 'btn-outline-danger' if r.cadastrada else 'btn-success' }}">{{ icon('ok') }}{{ 'Criar mesmo assim' if r.cadastrada else 'Criar lançamento com estes dados' }}</button>
+            <span class="small text-muted ms-2">abre o formulário preenchido para você conferir</span>
+        </form>
+
+        <details>
+            <summary class="small">Texto lido da página (para diagnóstico)</summary>
+            <pre class="small mt-2 mb-0" style="white-space: pre-wrap">{{ d.amostra }}</pre>
+        </details>
+        {% elif r.chave and not r.erro %}
+        <div class="alert alert-secondary small">Só a chave foi lida; nenhuma página foi consultada.</div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="d-flex gap-2 mb-3">
+    <a href="/lancamentos/novo" class="btn btn-outline-secondary">Voltar ao novo lançamento</a>
+</div>
+{% include "_leitor_qr.html" %}
+{% endblock %}

@@ -1,0 +1,4 @@
+# Só para rodar os testes localmente (tests/). NÃO entra na imagem Docker (requirements.txt/.lock).
+-r requirements.txt
+pytest>=8
+httpx>=0.27

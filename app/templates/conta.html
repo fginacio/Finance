@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Minha conta - Controle de Gastos{% endblock %}
+{% block content %}
+
+<h1 class="h4 mb-3">Minha conta</h1>
+
+{% if ok %}<div class="alert alert-success">{{ icon('ok') }} {{ ok }}</div>{% endif %}
+{% if erro %}<div class="alert alert-danger">{{ erro }}</div>{% endif %}
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h6 mb-3">Dados</h2>
+            <dl class="row mb-0 small">
+                <dt class="col-5 text-muted fw-normal">Nome</dt><dd class="col-7">{{ request.state.usuario["nome"] }}</dd>
+                <dt class="col-5 text-muted fw-normal">Usuário</dt><dd class="col-7">{{ request.state.usuario["usuario"] }}</dd>
+                <dt class="col-5 text-muted fw-normal">Último acesso</dt><dd class="col-7">{{ ultimo_login or "-" }} <span class="text-muted">(UTC)</span></dd>
+                <dt class="col-5 text-muted fw-normal">Sessões abertas</dt><dd class="col-7">{{ sessoes }}</dd>
+            </dl>
+            <form method="post" action="/logout" class="mt-3">
+                <button class="btn btn-outline-secondary btn-sm">Sair deste aparelho</button>
+            </form>
+        </div></div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h6 mb-3">Trocar senha</h2>
+            <form method="post" action="/conta/senha" class="row g-3" autocomplete="off">
+                <div class="col-12">
+                    <label class="form-label" for="atual">Senha atual</label>
+                    <input class="form-control" type="password" id="atual" name="atual" autocomplete="current-password" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="nova">Nova senha</label>
+                    <input class="form-control" type="password" id="nova" name="nova" autocomplete="new-password" minlength="8" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="confirmacao">Repita a nova senha</label>
+                    <input class="form-control" type="password" id="confirmacao" name="confirmacao" autocomplete="new-password" minlength="8" required>
+                </div>
+                <div class="col-12 form-text mt-0">Mínimo de 8 caracteres. Uma frase longa é melhor que uma palavra difícil. Ao trocar, os outros aparelhos são desconectados.</div>
+                <div class="col-12"><button class="btn btn-primary">{{ icon('salvar') }}Alterar senha</button></div>
+            </form>
+        </div></div>
+    </div>
+</div>
+
+{% endblock %}

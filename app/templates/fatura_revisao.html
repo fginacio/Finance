@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Revisar faturas - Controle de Gastos{% endblock %}
+{% from "_macros.html" import icon %}
+{% block wide %}wide{% endblock %}
+{% block content %}
+
+<h1 class="h4 mb-2">Revisar faturas</h1>
+<p class="text-muted small">Confira cada linha antes de gravar. A <strong>data</strong> é a do pagamento (começa com o vencimento);
+    se você já pagou, deixe <em>Pago</em>. Se o recorrente já tem um lançamento pendente no mês, ele é concluído em vez de duplicado.
+    <strong>Fatura de cartão:</strong> escolha o cartão. Só o total da fatura é lançado (categoria “Cartões de crédito”); os itens não entram.</p>
+
+{% set lidas = linhas | rejectattr("erro") | list %}
+{% for l in linhas if l.erro %}
+<div class="alert alert-danger py-2"><strong>{{ l.arquivo }}</strong>: {{ l.erro }}</div>
+{% endfor %}
+
+{% if lidas %}
+<form method="post" action="/importar/faturas/confirmar">
+<div class="table-responsive"><table class="table table-sm align-middle tabela-cartoes">
+    <thead><tr><th>Arquivo</th><th>Recorrente reconhecido</th><th>Categoria (se avulsa)</th><th>É fatura de cartão? Qual?</th><th>Valor (R$)</th>
+        <th>Data do pagamento</th><th>Status</th><th>Ação</th></tr></thead>
+    <tbody>
+    {% for l in lidas %}
+    <tr class="{{ 'table-danger' if l.avisos else ('table-warning' if l.valor is none or not (l.recorrente_id or l.cartao_id) or (l.eh_cartao and not l.cartao_id)) }}">
+        <td class="small cel-bloco">
+            {{ l.arquivo }}
+            <input type="hidden" name="arquivo" value="{{ l.arquivo }}">
+            <input type="hidden" name="vencimento" value="{{ l.vencimento }}">
+            <input type="hidden" name="referencia" value="{{ l.referencia }}">
+            <input type="hidden" name="descricao" value="">
+            {% for a in l.avisos %}<div class="text-danger small fw-semibold">{{ icon('alerta') }}{{ a }}</div>{% endfor %}
+            <div class="text-muted">Venc. {{ l.vencimento[8:] ~ "/" ~ l.vencimento[5:7] ~ "/" ~ l.vencimento[:4] if l.vencimento else "?" }}
+                · ref. {{ l.referencia[5:] ~ "/" ~ l.referencia[:4] if l.referencia else "?" }}</div>
+            <details><summary class="text-muted">texto lido</summary><pre class="small mb-0" style="white-space: pre-wrap; max-width: 320px">{{ l.texto }}</pre></details>
+        </td>
+        <td><select name="recorrente_id" class="form-select form-select-sm">
+            <option value="">— nenhum (gasto avulso) —</option>
+            {% for r in recorrentes %}<option value="{{ r['id'] }}" {{ 'selected' if l.recorrente_id == r['id'] }}>{{ r['descricao'] }}</option>{% endfor %}
+        </select></td>
+        <td><select name="categoria_id" class="form-select form-select-sm">
+            <option value="">-</option>
+            {% for c in categorias %}<option value="{{ c['id'] }}">{{ c['grupo'] }} › {{ c['nome'] }}</option>{% endfor %}
+        </select></td>
+        <td><select name="cartao_id" class="form-select form-select-sm {{ 'border-danger' if l.eh_cartao and not l.cartao_id }}">
+            <option value="">— não —</option>
+            {% for c in cartoes %}<option value="{{ c['id'] }}" {{ 'selected' if l.cartao_id == c['id'] }}>{{ c['identificador'] }}</option>{% endfor %}
+        </select>{% if l.eh_cartao and not l.cartao_id %}<div class="text-danger small">Parece fatura de cartão: escolha o cartão.</div>{% endif %}</td>
+        <td><input name="valor" class="form-control form-control-sm text-end" style="width: 7rem" inputmode="decimal" required
+                   value="{{ ('%.2f'|format(l.valor)|replace('.', ',')) if l.valor is not none else '' }}" placeholder="não achei">
+            {% if l.zerada %}<div class="text-success small mt-1">Fatura zerada: nada a lançar.</div>{% endif %}
+            {% if l.alternativas %}<div class="text-muted small mt-1" style="max-width: 9rem">Outros valores no PDF:
+                {% for v in l.alternativas %}{{ ('%.2f'|format(v)|replace('.', ',')) }}{{ " · " if not loop.last }}{% endfor %}</div>{% endif %}</td>
+        <td><input type="date" name="data_pagamento" class="form-control form-control-sm" required value="{{ l.vencimento }}"></td>
+        <td><select name="status" class="form-select form-select-sm">
+            {% for s in ["Pago", "Pendente", "Agendado"] %}<option {{ 'selected' if l.status == s }}>{{ s }}</option>{% endfor %}
+        </select></td>
+        <td><select name="acao" class="form-select form-select-sm">
+            <option value="incluir" {{ 'selected' if not l.zerada }}>Incluir</option><option value="ignorar" {{ 'selected' if l.zerada }}>Ignorar</option>
+        </select></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table></div>
+<button class="btn btn-primary">{{ icon('ok') }}Gravar faturas</button>
+<a href="/importar" class="btn btn-outline-secondary">Cancelar</a>
+</form>
+{% else %}
+<a href="/importar" class="btn btn-outline-secondary">Voltar</a>
+{% endif %}
+
+{% endblock %}

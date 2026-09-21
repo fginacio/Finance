@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Cadastros - Controle de Gastos{% endblock %}
+{% block wide %}wide{% endblock %}
+{% block content %}
+
+<h1 class="h4 mb-3">Cadastros</h1>
+
+<ul class="nav nav-tabs mb-3">
+    {% for chave, titulo in abas.items() %}
+    <li class="nav-item">
+        <a class="nav-link {{ 'active' if chave == aba }}" href="/cadastros/{{ chave }}">{{ titulo }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+{% if erro %}<div class="alert alert-danger">{{ erro }}</div>{% endif %}
+{% if ok %}<div class="alert alert-success">{{ ok }}</div>{% endif %}
+
+<div class="card shadow-sm">
+<div class="card-body">
+
+{# ------------------------------------------------------------ categorias #}
+{% if aba == "categorias" %}
+<p class="text-muted small">Edite direto na linha e clique em <strong>Salvar</strong>. Categorias inativas não aparecem nos formulários,
+    mas os lançamentos antigos continuam com elas. Orçamento 0 = sem meta para a categoria.</p>
+<div class="table-responsive">
+<table class="table table-sm align-middle tabela-cartoes">
+    <thead><tr><th>Categoria</th><th>Grupo</th><th class="text-center">Essencial</th><th>Orçamento mensal (R$)</th>
+        <th class="text-center" title="Desmarcado: os lançamentos da categoria não somam nos gastos (ex.: aplicações)">Soma nos gastos</th><th class="text-center">Ativa</th><th>Observação</th><th></th></tr></thead>
+    <tbody>
+    {% for c in itens + [None] %}
+    {% set f = "f-" ~ (c["id"] if c else "novo") %}
+    <tr class="{{ 'table-light' if not c }} {{ 'text-muted' if c and not c['ativa'] }}">
+        <td><form id="{{ f }}" method="post" action="/cadastros/categorias/salvar"></form>
+            {% if c %}<input type="hidden" form="{{ f }}" name="id" value="{{ c['id'] }}">{% endif %}
+            <input class="form-control form-control-sm" form="{{ f }}" name="nome" required value="{{ c['nome'] if c }}" placeholder="{{ 'Nova categoria' if not c }}"></td>
+        <td><select class="form-select form-select-sm" form="{{ f }}" name="grupo" required>
+            {% if not c %}<option value="" selected disabled>Selecione...</option>{% endif %}
+            {% for g in opcoes(grupos, c['grupo'] if c else None) %}<option value="{{ g }}" {{ 'selected' if c and c['grupo'] == g }}>{{ g }}</option>{% endfor %}
+        </select></td>
+        <td class="text-center"><input type="checkbox" class="form-check-input" form="{{ f }}" name="essencial" value="1" {{ 'checked' if c and c['essencial'] }}></td>
+        <td><input class="form-control form-control-sm text-end" form="{{ f }}" name="orcamento_mensal" inputmode="decimal"
+                   value="{{ ('%.2f'|format(c['orcamento_mensal'])|replace('.', ',')) if c else '0,00' }}"></td>
+        <td class="text-center"><input type="checkbox" class="form-check-input" form="{{ f }}" name="contabiliza" value="1" {{ 'checked' if not c or c['contabiliza'] }}></td>
+        <td class="text-center"><input type="checkbox" class="form-check-input" form="{{ f }}" name="ativa" value="1" {{ 'checked' if not c or c['ativa'] }}></td>
+        <td><input class="form-control form-control-sm" form="{{ f }}" name="observacao" value="{{ (c['observacao'] or '') if c }}"></td>
+        <td><button class="btn btn-sm {{ 'btn-outline-primary' if c else 'btn-primary' }}" form="{{ f }}">{{ "Salvar" if c else "Adicionar" }}</button></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+
+{# ---------------------------------------------------------------- cartões #}
+{% elif aba == "cartoes" %}
+<p class="text-muted small">O identificador é o nome que aparece na lista de cartões dos lançamentos (ex.: <em>Maria - Nubank</em>).
+    As <strong>palavras-chave</strong> (ex.: o final do cartão, separado por vírgula) ajudam a reconhecer o cartão nas faturas e no extrato;
+    sem elas, o sistema tenta pelo nome do banco.</p>
+<div class="table-responsive">
+<table class="table table-sm align-middle tabela-cartoes">
+    <thead><tr><th>Identificador</th><th>Titular</th><th>Banco / Emissor</th><th>Palavras-chave</th><th class="text-center">Ativo</th><th>Observação</th><th></th></tr></thead>
+    <tbody>
+    {% for c in itens + [None] %}
+    {% set f = "f-" ~ (c["id"] if c else "novo") %}
+    <tr class="{{ 'table-light' if not c }} {{ 'text-muted' if c and not c['ativo'] }}">
+        <td><form id="{{ f }}" method="post" action="/cadastros/cartoes/salvar"></form>
+            {% if c %}<input type="hidden" form="{{ f }}" name="id" value="{{ c['id'] }}">{% endif %}
+            <input class="form-control form-control-sm" form="{{ f }}" name="identificador" required value="{{ c['identificador'] if c }}" placeholder="{{ 'Novo cartão' if not c }}"></td>
+        <td><select class="form-select form-select-sm" form="{{ f }}" name="titular_id" required>
+            {% for t in titulares %}<option value="{{ t['id'] }}" {{ 'selected' if c and c['titular_id'] == t['id'] }}>{{ t['nome'] }}</option>{% endfor %}
+        </select></td>
+        <td><select class="form-select form-select-sm" form="{{ f }}" name="banco" required>
+            {% if not c %}<option value="" selected disabled>Selecione...</option>{% endif %}
+            {% for b in opcoes(bancos, c['banco'] if c else None) %}<option value="{{ b }}" {{ 'selected' if c and c['banco'] == b }}>{{ b }}</option>{% endfor %}
+        </select></td>
+        <td><input class="form-control form-control-sm" form="{{ f }}" name="palavra_chave" value="{{ (c['palavra_chave'] or '') if c }}"
+                   placeholder="ex.: final 1234"></td>
+        <td class="text-center"><input type="checkbox" class="form-check-input" form="{{ f }}" name="ativo" value="1" {{ 'checked' if not c or c['ativo'] }}></td>
+        <td><input class="form-control form-control-sm" form="{{ f }}" name="observacao" value="{{ (c['observacao'] or '') if c }}"></td>
+        <td><button class="btn btn-sm {{ 'btn-outline-primary' if c else 'btn-primary' }}" form="{{ f }}">{{ "Salvar" if c else "Adicionar" }}</button></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+
+{# -------------------------------------------------------------- titulares #}
+{% elif aba == "titulares" %}
+<p class="text-muted small">Quem faz os gastos. Renomear atualiza todos os lançamentos, que apontam para o titular pelo código. O <strong>orçamento mensal</strong> de cada titular é acompanhado no painel; 0 = sem orçamento.</p>
+<div class="table-responsive">
+<table class="table table-sm align-middle tabela-cartoes" style="max-width: 640px">
+    <thead><tr><th>Nome</th><th>Orçamento mensal (R$)</th><th></th></tr></thead>
+    <tbody>
+    {% for t in itens + [None] %}
+    {% set f = "f-" ~ (t["id"] if t else "novo") %}
+    <tr class="{{ 'table-light' if not t }}">
+        <td><form id="{{ f }}" method="post" action="/cadastros/titulares/salvar"></form>
+            {% if t %}<input type="hidden" form="{{ f }}" name="id" value="{{ t['id'] }}">{% endif %}
+            <input class="form-control form-control-sm" form="{{ f }}" name="nome" required value="{{ t['nome'] if t }}" placeholder="{{ 'Novo titular' if not t }}"></td>
+        <td><input class="form-control form-control-sm text-end" form="{{ f }}" name="orcamento_mensal" inputmode="decimal"
+                   value="{{ ('%.2f'|format(t['orcamento_mensal'])|replace('.', ',')) if t else '0,00' }}"></td>
+        <td><button class="btn btn-sm {{ 'btn-outline-primary' if t else 'btn-primary' }}" form="{{ f }}">{{ "Salvar" if t else "Adicionar" }}</button></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+
+{# ------------------------------------------------- vale alimentação/refeição #}
+{% elif aba == "beneficios" %}
+<p class="text-muted small">Cartões de benefício <strong>não são dinheiro</strong>: os usos não entram nos gastos do mês. Todo mês, no <strong>dia da recarga</strong>,
+    o valor mensal é somado ao saldo que sobrou. Para registrar uma compra, use <em>Novo gasto</em> com a forma de pagamento <strong>Vale alimentação/refeição</strong>.
+    O <strong>saldo inicial</strong> é o que o cartão já tinha na data de <strong>início</strong>; as recargas contam a partir dessa data.</p>
+<div class="table-responsive">
+<table class="table table-sm align-middle tabela-cartoes">
+    <thead><tr><th>Dono</th><th>Nome do cartão</th><th>Valor mensal (R$)</th><th>Dia da recarga</th><th>Início</th><th>Saldo inicial (R$)</th>
+        <th class="text-center">Ativo</th><th class="text-end">Saldo hoje</th><th></th></tr></thead>
+    <tbody>
+    {% for c in itens + [None] %}
+    {% set f = "f-" ~ (c["id"] if c else "novo") %}
+    <tr class="{{ 'table-light' if not c }} {{ 'text-muted' if c and not c['ativo'] }}">
+        <td><form id="{{ f }}" method="post" action="/cadastros/beneficios/salvar"></form>
+            {% if c %}<input type="hidden" form="{{ f }}" name="id" value="{{ c['id'] }}">{% endif %}
+            <select class="form-select form-select-sm" form="{{ f }}" name="titular_id" required>
+                {% for t in titulares %}<option value="{{ t['id'] }}" {{ 'selected' if c and c['titular_id'] == t['id'] }}>{{ t['nome'] }}</option>{% endfor %}
+            </select></td>
+        <td><input class="form-control form-control-sm" form="{{ f }}" name="nome" required value="{{ c['nome'] if c }}" placeholder="{{ 'ex.: Alelo Refeição' if not c }}"></td>
+        <td><input class="form-control form-control-sm text-end" form="{{ f }}" name="valor_mensal" inputmode="decimal" required
+                   value="{{ ('%.2f'|format(c['valor_mensal'])|replace('.', ',')) if c else '' }}" placeholder="0,00"></td>
+        <td><input class="form-control form-control-sm" form="{{ f }}" name="dia_recarga" type="number" min="1" max="31" required style="width: 5rem"
+                   value="{{ c['dia_recarga'] if c }}"></td>
+        <td><input class="form-control form-control-sm" form="{{ f }}" name="inicio" type="date" required value="{{ c['inicio'] if c else hoje }}"></td>
+        <td><input class="form-control form-control-sm text-end" form="{{ f }}" name="saldo_inicial" inputmode="decimal"
+                   value="{{ ('%.2f'|format(c['saldo_inicial'])|replace('.', ',')) if c else '0,00' }}"></td>
+        <td class="text-center"><input type="checkbox" class="form-check-input" form="{{ f }}" name="ativo" value="1" {{ 'checked' if not c or c['ativo'] }}></td>
+        <td class="text-end fw-semibold">{% if c %}{{ ("R$ " ~ ('%.2f'|format(saldos[c['id']])))|replace('.', ',') }}{% endif %}</td>
+        <td><button class="btn btn-sm {{ 'btn-outline-primary' if c else 'btn-primary' }}" form="{{ f }}">{{ "Salvar" if c else "Adicionar" }}</button></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<h2 class="h6 mt-4 mb-2">Últimos usos</h2>
+<div class="table-responsive">
+<table class="table table-sm align-middle" style="max-width: 760px">
+    <thead><tr><th>Data</th><th>Cartão (dono)</th><th>Gasto de</th><th>Descrição</th><th class="text-end">Valor</th><th></th></tr></thead>
+    <tbody>
+    {% for u in usos %}
+    <tr>
+        <td>{{ u["data"][8:] }}/{{ u["data"][5:7] }}/{{ u["data"][:4] }}</td>
+        <td>{{ u["dono"] }} - {{ u["cartao"] }}</td>
+        <td>{{ u["titular"] }}</td>
+        <td>{{ u["descricao"] or "-" }}</td>
+        <td class="text-end">{{ ("R$ " ~ ('%.2f'|format(u["valor"])))|replace('.', ',') }}</td>
+        <td><button class="btn btn-sm btn-outline-danger" hx-delete="/beneficios/usos/{{ u['id'] }}" hx-target="closest tr" hx-swap="outerHTML"
+                    hx-confirm="Excluir este uso? O valor volta para o saldo do cartão.">Excluir</button></td>
+    </tr>
+    {% else %}<tr><td colspan="6" class="text-muted">Nenhum uso registrado ainda.</td></tr>{% endfor %}
+    </tbody>
+</table>
+</div>
+
+{# --------------------------------------------------------------- usuários #}
+{% elif aba == "usuarios" %}
+<p class="text-muted small">Quem pode entrar no sistema. <strong>Desativar</strong> bloqueia o acesso e encerra as sessões, mas preserva o histórico.
+    <strong>Redefinir</strong> a senha desconecta a pessoa dos aparelhos. Mínimo de 8 caracteres.</p>
+<div class="table-responsive">
+<table class="table table-sm align-middle tabela-cartoes">
+    <thead><tr><th>Nome</th><th>Usuário</th><th>Último acesso (UTC)</th><th class="text-center">Ativo</th><th>Nova senha</th></tr></thead>
+    <tbody>
+    {% for u in itens %}
+    <tr class="{{ 'text-muted' if not u['ativo'] }}">
+        <td>{{ u["nome"] }}{% if u["id"] == eu %} <span class="badge text-bg-secondary">você</span>{% endif %}</td>
+        <td>{{ u["usuario"] }}</td>
+        <td>{{ u["ultimo_login"] or "-" }}</td>
+        <td class="text-center">
+            <form method="post" action="/cadastros/usuarios/{{ u['id'] }}/alternar" class="d-inline">
+                <button class="btn btn-sm {{ 'btn-outline-success' if u['ativo'] else 'btn-outline-secondary' }}" {{ 'disabled' if u["id"] == eu }}
+                        title="{{ 'Você não pode desativar o próprio usuário' if u['id'] == eu else 'Clique para ' ~ ('desativar' if u['ativo'] else 'reativar') }}">{{ "Sim" if u["ativo"] else "Não" }}</button>
+            </form>
+        </td>
+        <td>
+            <form method="post" action="/cadastros/usuarios/{{ u['id'] }}/senha" class="d-flex gap-2" autocomplete="off">
+                <input type="password" name="nova" class="form-control form-control-sm" placeholder="nova senha" minlength="8" required autocomplete="new-password">
+                <button class="btn btn-sm btn-outline-primary">Redefinir</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+<h2 class="h6 mt-4 mb-2">Novo usuário</h2>
+<form method="post" action="/cadastros/usuarios/criar" class="row g-2" style="max-width: 760px" autocomplete="off">
+    <div class="col-md-4"><input class="form-control" name="nome" placeholder="Nome (ex.: Maria Souza)" required></div>
+    <div class="col-md-3"><input class="form-control" name="usuario" placeholder="usuário (sem espaços)" autocapitalize="none" required></div>
+    <div class="col-md-3"><input class="form-control" type="password" name="senha" placeholder="Senha (mín. 8)" minlength="8" autocomplete="new-password" required></div>
+    <div class="col-md-2"><button class="btn btn-primary w-100">Criar</button></div>
+</form>
+
+{# ------------------------------------------------------------- parâmetros #}
+{% else %}
+<form method="post" action="/cadastros/parametros/salvar" class="row g-3" style="max-width: 640px">
+    <div class="col-md-6">
+        <label class="form-label">Meta de economia mensal (R$)</label>
+        <input class="form-control" name="meta_economia_mensal" inputmode="decimal" value="{{ '%.2f'|format(meta)|replace('.', ',') }}">
+        <div class="form-text">Quanto você quer sobrar/poupar por mês.</div>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Teto mensal de gastos (R$)</label>
+        <input class="form-control" name="teto_mensal" inputmode="decimal" value="{{ '%.2f'|format(teto)|replace('.', ',') }}">
+        <div class="form-text">Opcional. Se 0, o painel usa a soma dos orçamentos por categoria.</div>
+    </div>
+    <div class="col-12"><button class="btn btn-primary">Salvar parâmetros</button></div>
+</form>
+{% endif %}
+
+</div>
+</div>
+
+{% endblock %}

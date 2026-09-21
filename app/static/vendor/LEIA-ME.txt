@@ -1,0 +1,17 @@
+Bibliotecas de terceiros servidas pelo próprio app (sem CDN): o app funciona sem internet e não depende de
+um servidor externo para carregar código.
+
+Arquivos originais, sem alteração. Integridade conferida contra os hashes SRI publicados pelos projetos:
+
+  bootstrap-5.3.3/bootstrap.min.css        https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css
+      sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH
+  bootstrap-5.3.3/bootstrap.bundle.min.js  https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js
+      sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz
+  htmx-2.0.4/htmx.min.js                   https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js
+      sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+
+  chart.js-4.4.4/chart.umd.min.js          https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js
+      sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt
+
+Para atualizar: baixe a nova versão, confira o hash (openssl dgst -sha384 -binary ARQ | openssl base64 -A),
+crie a pasta com o número da versão e troque o caminho em app/templates/base.html e login.html.
+Licenças: Bootstrap (MIT) e HTMX (BSD 0-Clause).

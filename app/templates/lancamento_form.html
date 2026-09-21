@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}{{ "Editar" if l and l["id"] else "Novo" }} lançamento - Controle de Gastos{% endblock %}
+{% from "_macros.html" import icon %}
+{% block content %}
+{% set v = l or {} %}
+
+<h1 class="h4 mb-3">{{ "Editar lançamento" if v["id"] else "Novo lançamento" }}</h1>
+
+{% if erro %}<div class="alert alert-danger">{{ erro }}</div>{% endif %}
+
+{# Lançamento novo e ainda sem dados: oferece a leitura do QR da nota fiscal #}
+{% if not l %}{% include "_leitor_qr.html" %}{% endif %}
+
+<form method="post" action="/lancamentos/salvar" class="card shadow-sm">
+    <div class="card-body row g-3">
+        {% if v["id"] %}<input type="hidden" name="id" value="{{ v['id'] }}">{% endif %}
+
+        <div class="col-md-3">
+            <label class="form-label">Data</label>
+            <input type="date" name="data" class="form-control" required value="{{ v['data'] or hoje }}">
+        </div>
+        <div class="col-md-5">
+            <label class="form-label">Categoria</label>
+            <select name="categoria_id" class="form-select" required>
+                <option value="">Selecione...</option>
+                {% for c in categorias %}
+                <option value="{{ c['id'] }}" {{ 'selected' if v['categoria_id']|string == c['id']|string }}>{{ c['grupo'] }} › {{ c['nome'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Valor (R$)</label>
+            <input type="text" name="valor" inputmode="decimal" class="form-control" required placeholder="0,00"
+                   value="{% if v['valor'] is number %}{{ '%.2f'|format(v['valor'])|replace('.', ',') }}{% elif v['valor'] %}{{ v['valor'] }}{% endif %}">
+        </div>
+
+        <div class="col-md-8">
+            <label class="form-label">Descrição</label>
+            <input type="text" name="descricao" class="form-control" value="{{ v['descricao'] or '' }}">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Titular</label>
+            <select name="titular_id" class="form-select" data-familia="{{ familia_id or '' }}">
+                <option value="">-</option>
+                {% for t in titulares %}
+                <option value="{{ t['id'] }}" {{ 'selected' if v['titular_id']|string == t['id']|string }}>{{ t['nome'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label">Forma de pagamento</label>
+            <select name="forma_pagamento" class="form-select" required>
+                {% for f in formas %}
+                <option {{ 'selected' if v['forma_pagamento'] == f }}>{{ f }}</option>
+                {% endfor %}
+                {% if not v["id"] %}<option {{ 'selected' if v['forma_pagamento'] == vale_forma }}>{{ vale_forma }}</option>{% endif %}
+            </select>
+            <div class="form-text">Compra no <strong>cartão de crédito</strong> não soma nos totais: o gasto vem da fatura importada.</div>
+        </div>
+        <div class="col-md-4" id="campo-vale" hidden>
+            <label class="form-label">Cartão vale</label>
+            <select name="beneficio_id" class="form-select" disabled>
+                <option value="">Selecione...</option>
+                {% for b in vales %}<option value="{{ b['id'] }}" {{ 'selected' if v['beneficio_id']|string == b['id']|string }}>{{ b['titular'] }} - {{ b['nome'] }}</option>{% endfor %}
+            </select>
+            <div class="form-text">Não soma nos gastos do mês: baixa do saldo do cartão.</div>
+        </div>
+        <div class="col-md-4" id="campo-cartao">
+            <label class="form-label">Cartão</label>
+            <select name="cartao_id" class="form-select">
+                <option value="">-</option>
+                {% for c in cartoes %}
+                <option value="{{ c['id'] }}" {{ 'selected' if v['cartao_id']|string == c['id']|string }}>{{ c['identificador'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Parcela</label>
+            <input type="text" name="parcela" class="form-control" placeholder="ex.: 3/12" value="{{ v['parcela'] or '' }}">
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Tipo</label>
+            <select name="tipo" class="form-select">
+                {% for t in tipos %}<option {{ 'selected' if v['tipo'] == t }}>{{ t }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select">
+                {% for s in status_lista %}<option {{ 'selected' if v['status'] == s }}>{{ s }}</option>{% endfor %}
+            </select>
+        </div>
+
+        <div class="col-12">
+            <label class="form-label">Observações</label>
+            <textarea name="observacoes" rows="2" class="form-control">{{ v['observacoes'] or '' }}</textarea>
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+            <button class="btn btn-primary">{{ icon('salvar') }}Salvar</button>
+            <a href="/lancamentos" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+    </div>
+</form>
+
+<script>
+(function () {
+    var forma = document.querySelector('select[name=forma_pagamento]'), vale = document.getElementById('campo-vale'),
+        cartao = document.getElementById('campo-cartao');
+    function ajustar() {
+        var ehVale = forma.value === {{ vale_forma|tojson }};
+        vale.hidden = !ehVale; cartao.hidden = ehVale;
+        vale.querySelector('select').disabled = !ehVale; vale.querySelector('select').required = ehVale;
+        cartao.querySelector('select').disabled = ehVale;
+        var tit = document.querySelector('select[name=titular_id]');
+        if (ehVale) { if (tit.dataset.antes === undefined) tit.dataset.antes = tit.value; tit.value = tit.dataset.familia; }
+        else if (tit.dataset.antes !== undefined) { tit.value = tit.dataset.antes; delete tit.dataset.antes; }
+        tit.style.pointerEvents = ehVale ? 'none' : ''; tit.tabIndex = ehVale ? -1 : 0;
+    }
+    forma.addEventListener('change', ajustar); ajustar();
+})();
+</script>
+
+{% endblock %}

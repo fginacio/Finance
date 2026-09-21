@@ -1,0 +1,22 @@
+{# Roda antes de pintar a página (sem "piscada"): tema claro/escuro do sistema e detecção de dispositivo. #}
+<script>
+(function () {
+    var d = document.documentElement;
+    function ouvir(m, f) { if (m.addEventListener) { m.addEventListener('change', f); } else if (m.addListener) { m.addListener(f); } }
+
+    /* Tema: acompanha o modo claro/escuro do sistema e reage a mudanças com a página aberta. */
+    var escuro = matchMedia('(prefers-color-scheme: dark)');
+    function tema() { d.setAttribute('data-bs-theme', escuro.matches ? 'dark' : 'light'); }
+    tema(); ouvir(escuro, tema);
+
+    /* Dispositivo: celular/tablet por agente do navegador, ponteiro de toque sem mouse ou tela estreita. */
+    var agenteMovel = /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(navigator.userAgent);
+    var toque = matchMedia('(hover: none) and (pointer: coarse)');
+    var estreita = matchMedia('(max-width: 767.98px)');
+    function dispositivo() {
+        d.setAttribute('data-device', (agenteMovel || toque.matches || estreita.matches) ? 'mobile' : 'desktop');
+        d.setAttribute('data-input', toque.matches ? 'touch' : 'mouse');
+    }
+    dispositivo(); ouvir(toque, dispositivo); ouvir(estreita, dispositivo);
+})();
+</script>

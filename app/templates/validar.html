@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, brl %}
+{% block title %}A validar - Controle de Gastos{% endblock %}
+{% block wide %}wide{% endblock %}
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <h1 class="h4 mb-0">A validar <span class="badge text-bg-warning">{{ contagens.todos }}</span></h1>
+    <div class="d-flex gap-2">
+        <a href="/importar" class="btn btn-outline-primary btn-sm">{{ icon('importar') }}Importar mais</a>
+        {% if contagens.todos %}
+        <form method="post" action="/validar/confirmar-classificados"
+              onsubmit="return confirm('Confirmar todos os que já têm categoria e não parecem concluir um pendente?')">
+            <input type="hidden" name="filtro" value="{{ filtro }}">
+            <button class="btn btn-primary btn-sm">{{ icon('ok') }}Confirmar todos os classificados</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<ul class="nav nav-pills mb-3">
+    {% for chave, (_, titulo) in filtros.items() %}
+    <li class="nav-item"><a class="nav-link py-1 {{ 'active' if chave == filtro }}" href="/validar?filtro={{ chave }}">{{ titulo }}
+        <span class="badge {{ 'text-bg-light' if chave == filtro else 'text-bg-secondary' }}">{{ contagens[chave] }}</span></a></li>
+    {% endfor %}
+</ul>
+
+{% if not itens %}
+<div class="alert alert-success">{{ icon('ok') }} Nada aguardando validação{{ " neste filtro" if filtro != "todos" }}.</div>
+{% else %}
+<p class="text-muted small">Ajuste o que precisar e clique em <strong>Confirmar</strong>. Ao confirmar com categoria, o sistema
+    <strong>aprende</strong> e já classifica os próximos gastos parecidos. <strong>Excluir</strong> remove a linha e ela não volta se você importar o extrato de novo.</p>
+<div class="table-responsive">
+<table class="table table-sm align-middle tabela-cartoes">
+    <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Titular</th><th>Pagamento</th><th class="text-end">Valor (R$)</th><th></th></tr></thead>
+    <tbody>
+    {% for l in itens %}
+    {% set f = "f-" ~ l["id"] %}
+    <tr class="table-warning">
+        <td><form id="{{ f }}" method="post"></form>
+            <input type="hidden" form="{{ f }}" name="filtro" value="{{ filtro }}">
+            <input type="date" class="form-control form-control-sm" form="{{ f }}" name="data" value="{{ l['data'] }}" required></td>
+        <td class="cel-bloco" style="min-width: 14rem">
+            <input class="form-control form-control-sm" form="{{ f }}" name="descricao" value="{{ l['descricao'] or '' }}">
+            <div class="small mt-1">
+                {% if l["forma_pagamento"] == "PIX" %}<span class="badge text-bg-info">PIX</span>{% endif %}
+                {% if l["tipo"] == "Recorrente" %}<span class="badge text-bg-primary">recorrente</span>{% endif %}
+                {% if l["alerta"] %}<span class="text-danger" title="{{ l['alerta'] }}">{{ icon('alerta') }}{{ l["alerta"] }}</span>{% endif %}
+                {% if l["sugestao_id"] and l["sug_data"] %}<span class="text-success">{{ icon('seta') }}Parece ser “{{ l['sug_descricao'] }}” ({{ l['sug_data'][8:] }}/{{ l['sug_data'][5:7] }}, {{ brl(l['sug_valor']) }}). Se for o mesmo gasto, use <strong>Conciliar</strong>; se forem gastos diferentes, use <strong>Confirmar</strong>.</span>{% endif %}
+            </div>
+        </td>
+        <td><select style="min-width: 11rem" class="form-select form-select-sm {{ 'border-danger' if l['categoria_id'] == pendente_id }}" form="{{ f }}" name="categoria_id" required>
+            {% for c in categorias %}<option value="{{ c['id'] }}" {{ 'selected' if l['categoria_id'] == c['id'] }}>{{ c['grupo'] }} › {{ c['nome'] }}</option>{% endfor %}
+        </select></td>
+        <td><select class="form-select form-select-sm" form="{{ f }}" name="titular_id">
+            <option value="">-</option>
+            {% for t in titulares %}<option value="{{ t['id'] }}" {{ 'selected' if l['titular_id'] == t['id'] }}>{{ t['nome'] }}</option>{% endfor %}
+        </select></td>
+        <td><select class="form-select form-select-sm" form="{{ f }}" name="forma_pagamento">
+            {% for fp in formas %}<option {{ 'selected' if l['forma_pagamento'] == fp }}>{{ fp }}</option>{% endfor %}
+        </select></td>
+        <td><input class="form-control form-control-sm text-end" style="width: 7rem" form="{{ f }}" name="valor" inputmode="decimal" required
+                   value="{{ '%.2f'|format(l['valor'])|replace('.', ',') }}"></td>
+        <td class="text-end text-nowrap">
+            <button class="btn btn-sm btn-success" form="{{ f }}" formaction="/validar/{{ l['id'] }}/confirmar">{{ icon('ok') }}Confirmar</button>
+            {% if l["sugestao_id"] and l["sug_data"] %}
+            <button class="btn btn-sm btn-outline-success" form="{{ f }}" formaction="/validar/{{ l['id'] }}/conciliar"
+                    title="É o mesmo gasto: junta as duas linhas (o lançamento existente vira Pago com esta data e valor)">Conciliar</button>
+            {% endif %}
+            <button class="btn btn-sm btn-outline-danger" form="{{ f }}" formaction="/validar/{{ l['id'] }}/excluir" formnovalidate
+                    onclick="return confirm('Excluir esta linha? Ela não voltará em novas importações.')">{{ icon('excluir') }}Excluir</button>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,47 @@
+# Renderizado na partida por envsubst: só ${APP_PORT}, ${BACKEND_HOST} e ${BACKEND_PORT} são substituídos.
+
+# Freia tentativas em massa no login (o app também bloqueia o usuário após 5 erros).
+limit_req_zone $binary_remote_addr zone=login:10m rate=10r/m;
+
+server {
+    listen ${APP_PORT};
+    server_name _;
+
+    server_tokens off;
+    client_max_body_size 25m;          # extratos e faturas em PDF/OFX/XLSX
+    gzip on;
+    gzip_min_length 512;
+    gzip_types text/css application/javascript image/svg+xml text/plain;
+
+    # O nome do backend é resolvido a cada requisição (DNS do Docker): o frontend não cai se o backend reiniciar.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    set $backend http://${BACKEND_HOST}:${BACKEND_PORT};
+
+    # Verificação de saúde do próprio frontend.
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # CSS e ícones direto do nginx (o CSS usa ?v=N para renovar o cache).
+    location /static/ {
+        root /usr/share/nginx/html;
+        expires 1d;
+        add_header Cache-Control "public, max-age=86400";
+        add_header X-Content-Type-Options nosniff;
+        access_log off;
+    }
+
+    location = /login {
+        limit_req zone=login burst=8 nodelay;
+        limit_req_status 429;
+        include /etc/nginx/proxy_backend.conf;
+        proxy_pass $backend;
+    }
+
+    location / {
+        include /etc/nginx/proxy_backend.conf;
+        proxy_pass $backend;
+    }
+}

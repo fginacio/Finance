@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Recorrentes - Controle de Gastos{% endblock %}
+{% from "_macros.html" import icon %}
+{% block wide %}wide{% endblock %}
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <h1 class="h4 mb-0">Gastos recorrentes</h1>
+    <a href="/recorrentes/novo" class="btn btn-primary">{{ icon('novo') }}Novo gasto recorrente</a>
+</div>
+
+{% if gerados is not none %}
+<div class="alert alert-{{ 'success' if gerados else 'info' }} alert-dismissible fade show">
+    {% if gerados %}<strong>{{ gerados }}</strong> lançamento(s) gerado(s) para {{ mes[5:] }}/{{ mes[:4] }}.
+    {% else %}Nenhum lançamento novo para {{ mes[5:] }}/{{ mes[:4] }}.{% endif %}
+    {% if ignorados %}{{ ignorados }} já existia(m) e foi(ram) ignorado(s).{% endif %}
+    <a href="/lancamentos?mes={{ mes }}" class="alert-link">Ver lançamentos do mês</a>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+</div>
+{% endif %}
+
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <form method="post" action="/recorrentes/gerar" class="d-flex flex-wrap align-items-end gap-3">
+            <div>
+                <label class="form-label mb-1">Gerar lançamentos do mês</label>
+                <input type="month" name="mes" value="{{ mes }}" class="form-control" required>
+            </div>
+            <button class="btn btn-primary"
+                    onclick="return confirm('Gerar os lançamentos dos recorrentes ativos para o mês selecionado?')">{{ icon('sincronizar') }}Gerar lançamentos</button>
+            <div class="text-muted small">Cria um lançamento <em>Pendente</em> para cada recorrente ativo, com o valor estimado.
+                Os que já foram gerados no mês são ignorados.</div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="text-muted small">Total fixo estimado / mês (ativos)</div>
+        <div class="fs-4 fw-bold mb-3">R$ {{ "%.2f"|format(total_fixo)|replace(".", ",") }}</div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle tabela-cartoes">
+                <thead>
+                    <tr>
+                        <th>Dia</th><th>Categoria</th><th>Descrição</th><th>Titular</th>
+                        <th>Pagamento</th><th class="text-end">Valor estimado</th><th>Ativo</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in recorrentes %}
+                    <tr class="{{ 'text-muted' if not r['ativo'] }}">
+                        <td>{{ r["dia_vencimento"] or "-" }}</td>
+                        <td>{{ r["categoria"] }}</td>
+                        <td>{{ r["descricao"] }}{% if r["palavra_chave"] %}<div class="text-muted small">{{ icon('buscar') }}{{ r["palavra_chave"] }}</div>{% endif %}</td>
+                        <td>{{ r["titular"] or "-" }}</td>
+                        <td>{{ r["cartao"] or r["forma_pagamento"] }}</td>
+                        <td class="text-end">R$ {{ "%.2f"|format(r["valor_estimado"])|replace(".", ",") }}</td>
+                        <td>
+                            <form method="post" action="/recorrentes/{{ r['id'] }}/alternar" class="d-inline">
+                                <button class="btn btn-sm {{ 'btn-success' if r['ativo'] else 'btn-outline-secondary' }}"
+                                        title="Clique para {{ 'desativar' if r['ativo'] else 'ativar' }}">{{ "Sim" if r["ativo"] else "Não" }}</button>
+                            </form>
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <a href="/recorrentes/{{ r['id'] }}/editar" class="btn btn-sm btn-outline-secondary">{{ icon('editar') }}Editar</a>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    hx-delete="/recorrentes/{{ r['id'] }}"
+                                    hx-confirm="Excluir este recorrente?"
+                                    hx-target="closest tr" hx-swap="outerHTML">{{ icon('excluir') }}Excluir</button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="text-muted text-center py-3">Nenhum recorrente cadastrado.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

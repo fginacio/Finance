@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Sobre - Controle de Gastos{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Sobre</h1>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body d-flex align-items-center gap-3">
+        <span class="login-marca m-0">{{ icon('carteira') }}</span>
+        <div>
+            <div class="fs-5 fw-semibold">Controle de Gastos</div>
+            <div class="text-muted">Versão <strong>{{ versao }}</strong> · {{ data_versao[8:] }}/{{ data_versao[5:7] }}/{{ data_versao[:4] }}</div>
+            <div class="small text-muted">Controle de gastos pessoal/familiar: lançamentos, recorrentes, orçamento e relatórios.</div>
+        </div>
+    </div>
+</div>
+
+<h2 class="h5 mb-3">Notas de versão</h2>
+{% for n in notas %}
+<div class="card shadow-sm mb-3">
+    <div class="card-body">
+        <div class="d-flex flex-wrap align-items-baseline gap-2 mb-2">
+            <span class="badge {{ 'text-bg-primary' if loop.first else 'text-bg-secondary' }}">{{ n.versao }}</span>
+            <span class="fw-semibold">{{ n.titulo }}</span>
+            <span class="small text-muted ms-auto">{{ n.data[8:] }}/{{ n.data[5:7] }}/{{ n.data[:4] }}</span>
+        </div>
+        <ul class="mb-0">
+            {% for item in n.itens %}<li>{{ item }}</li>{% endfor %}
+        </ul>
+    </div>
+</div>
+{% endfor %}
+
+<p class="text-center text-muted small mt-4 mb-0">Código aberto, desenvolvido por <a href="https://fginacio.github.io/" target="_blank" rel="noopener noreferrer">FGINACIO</a> - veja o repositório no GitHub para relatar um problema ou sugerir melhorias.</p>
+{% endblock %}

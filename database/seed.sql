@@ -1,0 +1,11 @@
+-- ============================================================================
+-- Controle de Gastos - Dados iniciais
+--
+-- De propósito, este arquivo não insere nenhum dado: o banco começa
+-- totalmente vazio. Depois de criar o primeiro usuário (ver README, seção
+-- "Primeiro acesso") e fazer login, cadastre pela tela (menu Cadastros):
+--   1. Titulares (as pessoas que vão registrar gastos)
+--   2. Categorias (Moradia, Transporte, Alimentação, ...) e seus grupos
+--   3. Cartões de crédito (associados a um titular)
+--   4. Recorrentes (contas fixas mensais, para gerar os lançamentos pendentes)
+-- ============================================================================

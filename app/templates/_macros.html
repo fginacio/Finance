@@ -1,0 +1,7 @@
+{# Formatação compartilhada: R$ 1.234,56 e jan/26 #}
+{% macro brl(v) %}R$ {{ "{:,.2f}".format(v).replace(",", "X").replace(".", ",").replace("X", ".") }}{% endmacro %}
+{% macro nomemes(m) %}{{ ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][m[5:]|int - 1] }}/{{ m[2:4] }}{% endmacro %}
+{% macro pct(v) %}{{ "%.1f"|format(v)|replace(".", ",") }}%{% endmacro %}
+
+{# Ícone Fluent (Windows 11) de /static/icons/<nome>.svg; herda a cor do texto. #}
+{% macro icon(nome) %}<span class="fi" style="--fi: url('/static/icons/{{ nome }}.svg')" aria-hidden="true"></span>{% endmacro %}

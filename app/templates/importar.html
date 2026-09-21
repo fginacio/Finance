@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Importar - Controle de Gastos{% endblock %}
+{% from "_macros.html" import icon %}
+{% block content %}
+
+<h1 class="h4 mb-3">Importar</h1>
+
+{# ---------------------------------------------------- resultado do extrato #}
+{% if resultado is not none %}
+<div class="card shadow-sm mb-3 border-success"><div class="card-body">
+    <h2 class="h6">Resultado da importação do extrato de {{ mes[5:] }}/{{ mes[:4] }}</h2>
+    <table class="table table-sm align-middle small mb-2 tabela-cartoes">
+        <thead><tr><th>Arquivo</th><th class="text-end">Novas</th><th class="text-end">PIX</th><th class="text-end">Parecem pendentes</th><th class="text-end">Possíveis duplicadas</th>
+            <th class="text-end">Com alerta</th><th class="text-end">Já importadas</th><th class="text-end">Outros meses</th><th></th></tr></thead>
+        <tbody>
+        {% for r in resultado %}
+        <tr>
+            <td>{{ r.nome }}</td>
+            <td class="text-end fw-semibold">{{ r.novas }}</td><td class="text-end">{{ r.pix }}</td>
+            <td class="text-end">{{ r.sugestoes }}</td><td class="text-end {{ 'text-danger fw-bold' if r.duplicadas }}">{{ r.duplicadas }}</td><td class="text-end">{{ r.alertas }}</td><td class="text-end text-muted">{{ r.repetidas }}</td><td class="text-end text-muted">{{ r.fora }}</td>
+            <td>{% if r.erro %}<span class="text-danger">{{ r.erro }}</span>{% endif %}</td>
+        </tr>
+        {% else %}<tr><td colspan="9" class="text-muted">Nenhum arquivo enviado.</td></tr>{% endfor %}
+        </tbody>
+    </table>
+    {% if contar_a_validar() %}<a href="/validar" class="btn btn-success btn-sm">Ir para a validação ({{ contar_a_validar() }}) →</a>{% endif %}
+</div></div>
+{% endif %}
+
+{# ------------------------------------------------------ resultado das faturas #}
+{% if resultado_faturas %}
+<div class="card shadow-sm mb-3 border-success"><div class="card-body">
+    <h2 class="h6">Resultado das faturas</h2>
+    <ul class="list-unstyled mb-2 small">
+        {% for r in resultado_faturas %}
+        <li class="d-flex gap-2 align-items-baseline"><span class="{{ 'text-success' if r.ok else ('text-danger' if r.ok is false else 'text-muted') }}">{{ icon('ok' if r.ok else ('alerta' if r.ok is false else 'remover')) }}</span><span><strong>{{ r.arquivo }}</strong> — {{ r.msg }}</span></li>
+        {% endfor %}
+    </ul>
+    <a href="/lancamentos" class="btn btn-outline-secondary btn-sm">Ver lançamentos</a>
+</div></div>
+{% endif %}
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h5 d-flex align-items-center gap-2">{{ icon('banco') }} Extrato bancário</h2>
+            <p class="text-muted small">Importa só as <strong>saídas</strong>. Cada uma vira um lançamento <strong>destacado (“a validar”)</strong>,
+                com forma de pagamento detectada (PIX, boleto, débito...) e categoria sugerida quando reconhece o gasto.
+                Só entram as saídas do <strong>mês de referência</strong> (por padrão, o mês atual); as de outros meses são ignoradas.
+                Formatos: OFX, CSV, XLSX ou PDF.</p>
+            <form method="post" action="/importar/extrato" enctype="multipart/form-data" class="row g-2">
+                <div class="col-12"><input type="file" name="arquivos" class="form-control" multiple required
+                                           accept=".ofx,.csv,.txt,.xlsx,.xlsm,.pdf"></div>
+                <div class="col-md-5">
+                    <label class="form-label small mb-1">Mês de referência</label>
+                    <input type="month" name="mes" class="form-control" value="{{ mes }}" required>
+                </div>
+                <div class="col-md-7">
+                    <label class="form-label small mb-1">Senha do PDF (se houver)</label>
+                    <input type="password" name="senha" class="form-control" autocomplete="new-password"
+                           placeholder="Várias? Separe por vírgula">
+                </div>
+                <div class="col-12"><button class="btn btn-primary">{{ icon('importar') }}Importar extrato</button></div>
+            </form>
+            <div class="form-text mt-2">A senha é usada só para abrir o arquivo e não é guardada. Importar o mesmo período duas vezes não duplica.</div>
+        </div></div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h5 d-flex align-items-center gap-2">{{ icon('pdf') }} Faturas de contas (PDF)</h2>
+            <p class="text-muted small">Luz, gás, telefone etc. O sistema lê o valor e o vencimento, reconhece o <a href="/recorrentes">recorrente</a>
+                pelas palavras-chave e mostra tudo para você <strong>revisar antes de gravar</strong>.</p>
+            <form method="post" action="/importar/faturas" enctype="multipart/form-data" class="row g-2">
+                <div class="col-12"><input type="file" name="arquivos" class="form-control" multiple required accept=".pdf"></div>
+                <div class="col-12">
+                    <label class="form-label small mb-1">Senha do PDF (se houver)</label>
+                    <input type="password" name="senha" class="form-control" autocomplete="new-password" placeholder="Várias? Separe por vírgula">
+                </div>
+                <div class="col-12"><button class="btn btn-primary">{{ icon('pdf') }}Ler faturas</button></div>
+            </form>
+        </div></div>
+    </div>
+</div>
+
+{% endblock %}

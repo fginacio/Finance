@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ "Editar" if r and r["id"] else "Novo" }} recorrente - Controle de Gastos{% endblock %}
+{% from "_macros.html" import icon %}
+{% block content %}
+{% set v = r or {"ativo": 1, "dia_vencimento": 10} %}
+
+<h1 class="h4 mb-3">{{ "Editar recorrente" if v["id"] else "Novo recorrente" }}</h1>
+
+{% if erro %}<div class="alert alert-danger">{{ erro }}</div>{% endif %}
+
+<form method="post" action="/recorrentes/salvar" class="card shadow-sm">
+    <div class="card-body row g-3">
+        {% if v["id"] %}<input type="hidden" name="id" value="{{ v['id'] }}">{% endif %}
+
+        <div class="col-md-5">
+            <label class="form-label">Categoria</label>
+            <select name="categoria_id" class="form-select" required>
+                <option value="">Selecione...</option>
+                {% for c in categorias %}
+                <option value="{{ c['id'] }}" {{ 'selected' if v['categoria_id']|string == c['id']|string }}>{{ c['grupo'] }} › {{ c['nome'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-7">
+            <label class="form-label">Descrição padrão</label>
+            <input type="text" name="descricao" class="form-control" required value="{{ v['descricao'] or '' }}">
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Dia de vencimento</label>
+            <input type="number" name="dia_vencimento" min="1" max="31" class="form-control" required value="{{ v['dia_vencimento'] or '' }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Valor estimado (R$)</label>
+            <input type="text" name="valor_estimado" inputmode="decimal" class="form-control" required placeholder="0,00"
+                   value="{% if v['valor_estimado'] is number %}{{ '%.2f'|format(v['valor_estimado'])|replace('.', ',') }}{% elif v['valor_estimado'] %}{{ v['valor_estimado'] }}{% endif %}">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Forma de pagamento</label>
+            <select name="forma_pagamento" class="form-select" required>
+                {% for f in formas %}<option {{ 'selected' if v['forma_pagamento'] == f }}>{{ f }}</option>{% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">Titular</label>
+            <select name="titular_id" class="form-select">
+                <option value="">-</option>
+                {% for t in titulares %}
+                <option value="{{ t['id'] }}" {{ 'selected' if v['titular_id']|string == t['id']|string }}>{{ t['nome'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Cartão</label>
+            <select name="cartao_id" class="form-select">
+                <option value="">-</option>
+                {% for c in cartoes %}
+                <option value="{{ c['id'] }}" {{ 'selected' if v['cartao_id']|string == c['id']|string }}>{{ c['identificador'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-12">
+            <label class="form-label">Palavras-chave para reconhecer este gasto</label>
+            <input type="text" name="palavra_chave" class="form-control" value="{{ v['palavra_chave'] or '' }}"
+                   placeholder="ex.: ENEL, ENERGIA ELETRICA">
+            <div class="form-text">Usadas ao importar faturas e extratos: se o texto contiver uma delas, o gasto é reconhecido
+                como este recorrente. Separe por vírgula. Use termos específicos (evite "GAS", que também aparece em "GASOLINA").</div>
+        </div>
+
+        <div class="col-12">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="ativo" id="ativo" value="1" {{ 'checked' if v['ativo'] }}>
+                <label class="form-check-label" for="ativo">Ativo (entra na geração mensal)</label>
+            </div>
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+            <button class="btn btn-primary">{{ icon('salvar') }}Salvar</button>
+            <a href="/recorrentes" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
