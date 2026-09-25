@@ -81,6 +81,28 @@ Telas com um banco recém-instalado e vazio:
 
 Pré-requisito: [Docker](https://docs.docker.com/get-docker/) instalado e rodando.
 
+### Instalação rápida
+
+O instalador clona o repositório na pasta atual, cria o `.env` e já sobe os contêineres:
+
+```bash
+# macOS / Linux / WSL2
+curl -fsSL https://raw.githubusercontent.com/fginacio/Finance/main/install.sh | bash
+```
+
+```powershell
+# Windows PowerShell
+iwr -useb https://raw.githubusercontent.com/fginacio/Finance/main/install.ps1 | iex
+```
+
+> Baixe e leia o script antes de rodar `| bash`/`| iex` se preferir não confiar cegamente em pipes — ele só clona
+> o repositório, copia `.env.example` para `.env` e roda `docker compose up -d --build`; nada além disso.
+> Roda numa pasta nova a cada vez? O nome do projeto Docker é fixo (`controle-gastos`, em `docker-compose.yml`), então
+> instalar de novo na mesma máquina reaproveita os mesmos contêineres e volumes (por design: é um app pessoal, uma
+> instalação por máquina) — não duplica nada, mas também não isola duas instâncias no mesmo host.
+
+### Instalação manual
+
 ```bash
 git clone <url-deste-repositorio>
 cd controle-de-gastos
@@ -375,6 +397,8 @@ Cada teste roda num banco SQLite temporário, isolado do real. Veja `tests/READM
 │   ├── backend/Dockerfile
 │   └── db/                       Dockerfile + servico.sh, backup.sh, restaurar.sh, saude.sh
 ├── docker-compose.yml            frontend, backend e db (constrói as imagens a partir do código)
+├── install.sh                    instalador de uma linha (macOS/Linux/WSL2) — clona, cria o .env e sobe o Docker
+├── install.ps1                   mesmo instalador, para Windows PowerShell
 ├── scripts/                      scripts opcionais de manutenção para Windows (veja a seção acima)
 ├── tests/                        suíte pytest
 ├── .env.example                  variáveis de ambiente documentadas
