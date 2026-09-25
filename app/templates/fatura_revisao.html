@@ -18,7 +18,7 @@
 <form method="post" action="/importar/faturas/confirmar">
 <div class="table-responsive"><table class="table table-sm align-middle tabela-cartoes">
     <thead><tr><th>Arquivo</th><th>Recorrente reconhecido</th><th>Categoria (se avulsa)</th><th>É fatura de cartão? Qual?</th><th>Valor (R$)</th>
-        <th>Data do pagamento</th><th>Status</th><th>Ação</th></tr></thead>
+        <th>Data do pagamento</th><th>Status</th><th>Déb. automático</th><th>Ação</th></tr></thead>
     <tbody>
     {% for l in lidas %}
     <tr class="{{ 'table-danger' if l.avisos else ('table-warning' if l.valor is none or not (l.recorrente_id or l.cartao_id) or (l.eh_cartao and not l.cartao_id)) }}">
@@ -54,6 +54,12 @@
         <td><select name="status" class="form-select form-select-sm">
             {% for s in ["Pago", "Pendente", "Agendado"] %}<option {{ 'selected' if l.status == s }}>{{ s }}</option>{% endfor %}
         </select></td>
+        <td class="text-center">
+            <input type="hidden" name="debito_automatico" value="{{ '1' if l.debito_automatico else '0' }}" id="deb-{{ loop.index0 }}">
+            <input type="checkbox" class="form-check-input" title="Encontrei 'débito automático' no texto lido; confira e desmarque se não for o caso."
+                   {{ 'checked' if l.debito_automatico }}
+                   onchange="document.getElementById('deb-{{ loop.index0 }}').value = this.checked ? '1' : '0'">
+        </td>
         <td><select name="acao" class="form-select form-select-sm">
             <option value="incluir" {{ 'selected' if not l.zerada }}>Incluir</option><option value="ignorar" {{ 'selected' if l.zerada }}>Ignorar</option>
         </select></td>

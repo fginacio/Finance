@@ -21,6 +21,12 @@ python -m pytest tests/ -v
 - `test_avisos.py` — alerta de orçamento estourado (só dispara ao cruzar a linha, não a cada compra
   seguinte já estourada), alerta de gasto alto (só para lançamento novo, respeita o limiar 0 = desligado),
   e o lembrete de conta pendente (só nos dias certos: 3/1/0 antes do vencimento e todo dia se vencida).
+- `test_boleto.py` — parser da linha digitável (boleto bancário de 47 dígitos e conta de consumo/convênio
+  de 48), incluindo os dígitos verificadores e a extração do valor/vencimento.
+- `test_rotas_boleto.py` — upload de PDF em `/lancamentos/boleto/arquivo` (extração da linha digitável do
+  texto do PDF) e leitura da linha colada em `/lancamentos/boleto`.
+- `test_rotas_importacao_debito.py` — reconhecimento de "débito automático" no texto de uma fatura
+  importada e o efeito na forma de pagamento gravada.
 
 ## Ao adicionar uma rota ou tela nova
 

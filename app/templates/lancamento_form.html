@@ -8,8 +8,11 @@
 
 {% if erro %}<div class="alert alert-danger">{{ erro }}</div>{% endif %}
 
-{# Lançamento novo e ainda sem dados: oferece a leitura do QR da nota fiscal #}
-{% if not l %}{% include "_leitor_qr.html" %}{% endif %}
+{# Lançamento novo e ainda sem dados: oferece a leitura do QR da nota fiscal ou da linha digitável do boleto #}
+{% if not l %}
+{% include "_leitor_qr.html" %}
+{% include "_leitor_boleto.html" %}
+{% endif %}
 
 <form method="post" action="/lancamentos/salvar" class="card shadow-sm">
     <div class="card-body row g-3">

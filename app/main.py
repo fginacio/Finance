@@ -13,7 +13,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.database import get_db, init_db
-from app import autenticacao, beneficios, nota_fiscal, rotas_auth, rotas_beneficios, rotas_duplicidades, rotas_importacao, rotas_nota, rotas_sobre
+from app import autenticacao, beneficios, nota_fiscal, rotas_auth, rotas_beneficios, rotas_boleto, rotas_duplicidades, rotas_importacao, rotas_nota, rotas_sobre
 from app.listas import BANCOS_EMISSORES, GRUPOS_CATEGORIA, opcoes
 from app.templating import templates
 from app.relatorios import FORMAS_PAGAMENTO, dados_relatorios, meses_anteriores
@@ -31,6 +31,7 @@ app.include_router(rotas_importacao.router)
 app.include_router(rotas_beneficios.router)
 app.include_router(rotas_duplicidades.router)
 app.include_router(rotas_nota.router)
+app.include_router(rotas_boleto.router)
 app.include_router(rotas_sobre.router)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 

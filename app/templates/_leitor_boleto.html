@@ -1,0 +1,27 @@
+{# Leitura de boleto/conta de consumo: PDF (extrai o texto), foto do código de barras (ZXing) ou colar a linha digitável #}
+{% from "_macros.html" import icon %}
+<div class="card shadow-sm mb-3">
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <div class="flex-grow-1">
+                <div class="fw-semibold">Tem um boleto ou conta de consumo?</div>
+                <div class="small text-muted">Suba o PDF ou fotografe o código de barras: o app busca o valor e, se for boleto bancário, o vencimento.</div>
+            </div>
+            <input type="file" id="boleto-foto" accept="image/*" capture="environment" class="d-none">
+            <input type="file" id="boleto-arquivo" accept="image/*,application/pdf,.pdf" class="d-none">
+            <button type="button" class="btn btn-outline-primary" id="boleto-tirar-foto">{{ icon('novo') }}Ler código de barras</button>
+            <label for="boleto-arquivo" class="btn btn-outline-secondary mb-0" title="Escolher o PDF ou uma foto da galeria">Arquivo</label>
+        </div>
+        <div id="boleto-status" class="small mt-2 text-muted" role="status"></div>
+        <details class="mt-2">
+            <summary class="small">Ou cole a linha digitável</summary>
+            <form method="post" action="/lancamentos/boleto" class="mt-2 d-flex flex-wrap gap-2">
+                <input type="text" name="linha" class="form-control" style="max-width: 32rem"
+                       placeholder="Ex.: 83620000001 3 49920221202 7 61014000000 7 00008588439 3" required minlength="47">
+                <button class="btn btn-outline-primary">Ler linha digitável</button>
+            </form>
+        </details>
+    </div>
+</div>
+<script src="/static/vendor/zxing-0.21.3/zxing.min.js"></script>
+<script src="/static/boleto.js?v=1"></script>

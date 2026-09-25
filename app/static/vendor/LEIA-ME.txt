@@ -11,6 +11,11 @@ Arquivos originais, sem alteração. Integridade conferida contra os hashes SRI 
       sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+
   chart.js-4.4.4/chart.umd.min.js          https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js
       sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt
+  jsqr-1.4.0/jsQR.js                       https://raw.githubusercontent.com/cozmo/jsQR/master/dist/jsQR.js
+      (sem hash publicado pelo projeto; conferido pelo tamanho/conteúdo no momento do download)
+  zxing-0.21.3/zxing.min.js                https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js
+      sha384-BzBxP10ZE72aitqj5UMmUsbKFliP/DZqA8Wq+BNNhlIJDGoEd1tpkMYXOg9+n6sB (calculado no download; o projeto
+      não publica hash SRI oficial para essa versão)
 
 Para atualizar: baixe a nova versão, confira o hash (openssl dgst -sha384 -binary ARQ | openssl base64 -A),
 crie a pasta com o número da versão e troque o caminho em app/templates/base.html e login.html.

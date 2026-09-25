@@ -5,7 +5,7 @@
 <h1 align="center">Controle de Gastos</h1>
 
 <p align="center">
-  <strong>Self-hosted personal/household finance tracker — transactions, budgets, bank statement import and Telegram alerts</strong>
+  <strong>App de controle financeiro pessoal/familiar, self-hosted — lançamentos, orçamentos, importação de extrato e avisos no Telegram</strong>
 </p>
 
 <p align="center">
@@ -17,370 +17,380 @@
 </p>
 
 <p align="center">
-  <a href="#features">Features</a> &bull;
-  <a href="#screenshots">Screenshots</a> &bull;
-  <a href="#installation-docker">Install</a> &bull;
-  <a href="#configuration">Configuration</a> &bull;
-  <a href="#user-guide">User guide</a> &bull;
-  <a href="#telegram-notifications">Telegram</a> &bull;
-  <a href="#tests">Tests</a>
+  <a href="#funcionalidades">Funcionalidades</a> &bull;
+  <a href="#capturas-de-tela">Capturas de tela</a> &bull;
+  <a href="#instalacao-docker">Instalar</a> &bull;
+  <a href="#configuracao">Configuração</a> &bull;
+  <a href="#guia-de-uso">Guia de uso</a> &bull;
+  <a href="#avisos-no-telegram">Telegram</a> &bull;
+  <a href="#testes">Testes</a>
 </p>
 
 ---
 
-Personal/household finance tracker: transactions, recurring bills, budget by category and by person,
-bank statement and credit card invoice import, reports with charts, and Telegram notifications. Light/dark
-theme following the system, Windows 11-inspired visuals, and a dedicated mobile layout.
+App de controle financeiro pessoal/familiar: lançamentos, contas recorrentes, orçamento por categoria e por
+pessoa, importação de extrato bancário e fatura de cartão, relatórios com gráficos e avisos no Telegram. Tema
+claro/escuro conforme o sistema, visual inspirado no Windows 11 e layout dedicado para celular.
 
-The database starts **empty**: no users, categories, cards, or transactions are pre-loaded. After
-installing, you create the first user and set everything up from the screens (see
-[First access](#first-access) and [User guide](#user-guide)).
+O banco começa **vazio**: nenhum usuário, categoria, cartão ou lançamento vem pré-carregado. Depois de instalar,
+você cria o primeiro usuário e configura tudo pelas telas (veja [Primeiro acesso](#primeiro-acesso) e
+[Guia de uso](#guia-de-uso)).
 
-## Features
+## Funcionalidades
 
-- **Dashboard** for the selected month: total spent, essential spending, pending items, spending vs.
-  budget per person and per category, credit cards, meal/food vouchers, and recent months' trend.
-- **Reports**: monthly summary with charts (configurable period: 1/3/6/12 months) and analysis (top
-  categories, credit card concentration, categories over budget), filterable by person.
-- **Transactions**: create, edit, duplicate, delete.
-- **Recurring bills**: register fixed monthly expenses and generate the month's pending transactions
-  with one click; keywords let them be recognized automatically in imported statements/invoices.
-- **Import** bank statements (OFX, CSV, XLSX, PDF) and PDF invoices (including password-protected).
-- **To review**: everything coming from an import lands here highlighted, ready to categorize,
-  confirm, reconcile, or delete; the system learns from what you confirm.
-- **Duplicates**: scans transactions for expenses counted twice (e.g. a PDF invoice and the matching
-  card payment also showing up in the bank statement).
-- **Registrations**: categories (with a monthly budget and whether they count toward totals), credit
-  cards, people/account holders (each with their own monthly budget), meal/food vouchers, general
-  parameters, and system users.
-- **Fiscal receipt QR reading**: photograph a receipt's QR code and the transaction form opens
-  pre-filled with amount, date, and merchant.
-- **Telegram notifications** (optional): real-time activity, budget exceeded, large expense, bills due
-  soon, and a monthly closing summary — see [Telegram notifications](#telegram-notifications).
-- **Username/password login**, with sessions, lockout after failed attempts, and password changes.
+- **Painel** do mês: total gasto, gastos essenciais, pendências, gasto x orçamento por pessoa e por categoria,
+  cartões de crédito, vale alimentação/refeição e tendência dos últimos meses.
+- **Relatórios**: resumo mensal com gráficos (período configurável: 1/3/6/12 meses) e análise (categorias que
+  mais pesam, concentração por cartão, categorias estouradas), com filtro por pessoa.
+- **Lançamentos**: criar, editar, duplicar, excluir.
+- **Recorrentes**: cadastro de contas fixas mensais e geração dos lançamentos pendentes do mês com um clique;
+  palavras-chave permitem reconhecê-los automaticamente em extratos/faturas importados.
+- **Importação** de extrato bancário (OFX, CSV, XLSX, PDF) e faturas em PDF (inclusive com senha).
+- **A validar**: tudo que vem de uma importação chega aqui destacado, pronto para categorizar, confirmar,
+  conciliar ou excluir; o sistema aprende com o que você confirma.
+- **Duplicidades**: varre os lançamentos atrás de gastos contados duas vezes (por exemplo, uma fatura em PDF e o
+  pagamento correspondente aparecendo também no extrato).
+- **Cadastros**: categorias (com orçamento mensal e se contam ou não no total), cartões de crédito,
+  pessoas/titulares (cada uma com seu próprio orçamento), vale alimentação/refeição, parâmetros gerais e usuários
+  do sistema.
+- **Leitura de QR de nota fiscal**: fotografe o QR de uma nota e o formulário de lançamento abre preenchido com
+  valor, data e estabelecimento.
+- **Leitura de boleto/conta de consumo**: linha digitável colada, por PDF (extrai o texto) ou por foto do código
+  de barras — veja [Ler boleto/conta de consumo](#ler-boletoconta-de-consumo).
+- **Avisos no Telegram** (opcional): atividade em tempo real, orçamento estourado, gasto alto, contas perto do
+  vencimento e resumo do fechamento do mês — veja [Avisos no Telegram](#avisos-no-telegram).
+- **Login por usuário e senha**, com sessões, bloqueio após tentativas erradas e troca de senha.
 
 ## Stack
 
-Python + FastAPI + SQLite (no ORM) + Jinja2 + HTMX + Bootstrap, all served locally (no CDN). No
-JavaScript build step. `database/schema.sql` defines the database structure; existing databases are
-migrated automatically on startup (`migrar_db()` in `app/database.py`).
+Python + FastAPI + SQLite (sem ORM) + Jinja2 + HTMX + Bootstrap, tudo servido localmente (sem CDN). Sem build de
+JavaScript. `database/schema.sql` define a estrutura do banco; bancos já existentes são migrados
+automaticamente na inicialização (`migrar_db()` em `app/database.py`).
 
-## Screenshots
+## Capturas de tela
 
-Screens on a freshly installed, empty database (all screen labels are in Portuguese — the app's UI language):
+Telas com um banco recém-instalado e vazio:
 
-| Transactions | Reports |
+| Lançamentos | Relatórios |
 |---|---|
 | ![Lançamentos](screenshots/1-lancamentos.png) | ![Relatórios](screenshots/2-relatorios.png) |
-| **Recurring bills** | **Registrations** |
+| **Recorrentes** | **Cadastros** |
 | ![Recorrentes](screenshots/4-recorrentes.png) | ![Cadastros](screenshots/5-cadastros-categorias.png) |
 
-## Installation (Docker)
+## Instalação (Docker)
 
-Prerequisite: [Docker](https://docs.docker.com/get-docker/) installed and running.
+Pré-requisito: [Docker](https://docs.docker.com/get-docker/) instalado e rodando.
 
 ```bash
-git clone <this-repository-url>
+git clone <url-deste-repositorio>
 cd controle-de-gastos
-cp .env.example .env          # optional: adjust port, timezone, backup retention
+cp .env.example .env          # opcional: ajustar porta, fuso horário, retenção de backup
 docker compose up -d --build
 ```
 
-This starts three services:
+Isso sobe três serviços:
 
 ```
-phone / PC  ->  frontend (nginx)  ->  backend (FastAPI)  ->  db (data + backups)
-                port 8080:8080         port 8000, internal      persistent volume
-                (the only one published) Compose network only
+celular / PC  ->  frontend (nginx)  ->  backend (FastAPI)  ->  db (dados + backups)
+                  porta 8080:8080       porta 8000, interna     volume persistente
+                  (a única publicada)   só na rede do Compose
 ```
 
-| Service | What it is |
+| Serviço | O que é |
 |---|---|
-| `frontend` | nginx: serves CSS/icons, rate-limits login attempts, accepts uploads up to 25 MB, and proxies the rest to the backend |
-| `backend` | the FastAPI application; no port published directly on the host |
-| `db` | data layer: owns the database volume, does a **consistent daily backup**, checks integrity, and enforces retention |
+| `frontend` | nginx: serve CSS/ícones, limita tentativas de login, aceita uploads até 25 MB e repassa o resto para o backend |
+| `backend` | a aplicação FastAPI; nenhuma porta publicada diretamente no host |
+| `db` | camada de dados: dono do volume do banco, faz **backup diário consistente**, confere integridade e aplica a retenção |
 
-The database is **SQLite** (a single file, not a server); that's why the `db` service doesn't run a
-database server — it only holds the volume and the backups. Everything runs **as a non-root user**,
-with the backend's filesystem read-only except for the data volume.
+O banco é **SQLite** (um único arquivo, não um servidor); por isso o serviço `db` não roda um servidor de banco —
+ele só guarda o volume e os backups. Tudo roda **como usuário sem privilégios**, com o sistema de arquivos do
+backend somente leitura, exceto o volume de dados.
 
-### First access
+### Primeiro acesso
 
-The application starts **closed**: with no user registered, nobody can log in. Create the first one
-from the terminal (the password is typed without echoing to the screen):
+O aplicativo começa **fechado**: sem nenhum usuário cadastrado, ninguém entra. Crie o primeiro pelo terminal (a
+senha é digitada sem aparecer na tela):
 
 ```bash
-docker compose exec backend python -m app.usuarios criar jdoe --nome "John Doe"
+docker compose exec backend python -m app.usuarios criar joao --nome "João Silva"
 ```
 
-Open `http://localhost:8080` (or `http://<machine-ip>:8080` from another device on the same network)
-and log in with the user and password you just created.
+Abra `http://localhost:8080` (ou `http://<ip-da-maquina>:8080` de outro aparelho na mesma rede) e entre com o
+usuário e a senha criados.
 
-From there, register everything from the screens (**Cadastros** menu): people/account holders,
-categories, credit cards, and, if you want, recurring bills. See the [User guide](#user-guide) below.
+A partir daí, cadastre tudo pelas telas (menu **Cadastros**): pessoas/titulares, categorias, cartões de crédito
+e, se quiser, contas recorrentes. Veja o [Guia de uso](#guia-de-uso) abaixo.
 
-> Note: the CLI commands (`app.usuarios`) keep their argument names in Portuguese (`criar`, `--nome`,
-> `senha`, `listar`, `desativar`/`ativar`) since the rest of the application's domain language is
-> Portuguese; only this README is in English.
-
-### Running without Docker (development)
+### Rodando sem Docker (desenvolvimento)
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate            # Linux/Mac: source .venv/bin/activate
 pip install -r requirements.txt
 
-python -m app.usuarios criar jdoe --nome "John Doe"
+python -m app.usuarios criar joao --nome "João Silva"
 uvicorn app.main:app --reload
 ```
 
-Open `http://localhost:8000`. The database is created at `data/controle-gastos.db` on first run.
+Abra `http://localhost:8000`. O banco é criado em `data/controle-gastos.db` na primeira execução.
 
-## Configuration
+## Configuração
 
-Environment variables (`.env`, see `.env.example`):
+Variáveis de ambiente (`.env`, veja `.env.example`):
 
-| Variable | Default | What it does |
+| Variável | Padrão | O que faz |
 |---|---|---|
-| `APP_PORT` | `8080` | App port, the same on the host and inside the frontend container |
-| `TZ` | `America/Sao_Paulo` | Timezone (defines "today" and "current month") |
-| `COOKIE_SECURE` | `0` | `1` when HTTPS is terminated in front (a proxy); the session cookie then requires HTTPS |
-| `ORIGENS_PERMITIDAS` | (empty) | Extra `host:port` values accepted on form submissions, if there's a proxy under another name |
-| `BACKUP_HORAS` | `24` | Interval between automatic database backups |
-| `BACKUP_RETENCAO_DIAS` | `30` | Backup retention in days (never less than `BACKUP_MINIMO`) |
-| `BACKUP_MINIMO` | `7` | Minimum number of backups kept, even beyond the retention window |
-| `NOTIFICAR_DETALHES` | `1` | `0` = Telegram notifications only include the category, no amount or description |
-| `GASTO_ALTO` | `500` | Amount above which a new transaction triggers an extra Telegram alert; `0` disables it |
+| `APP_PORT` | `8080` | Porta do app, a mesma no host e dentro do contêiner do frontend |
+| `TZ` | `America/Sao_Paulo` | Fuso horário (define "hoje" e "mês atual") |
+| `COOKIE_SECURE` | `0` | `1` quando o HTTPS termina na frente (um proxy); o cookie de sessão passa a exigir HTTPS |
+| `ORIGENS_PERMITIDAS` | (vazio) | Outros `host:porta` aceitos nos envios de formulário, se houver um proxy com outro nome |
+| `BACKUP_HORAS` | `24` | Intervalo entre backups automáticos do banco |
+| `BACKUP_RETENCAO_DIAS` | `30` | Retenção de backups em dias (nunca menos que `BACKUP_MINIMO`) |
+| `BACKUP_MINIMO` | `7` | Número mínimo de backups mantidos, mesmo além da janela de retenção |
+| `NOTIFICAR_DETALHES` | `1` | `0` = os avisos no Telegram trazem só a categoria, sem valor nem descrição |
+| `GASTO_ALTO` | `500` | Valor acima do qual um lançamento novo dispara um aviso extra no Telegram; `0` desliga |
 
-## Authentication
+## Autenticação
 
-- **Username/password login**; the session is stored server-side (cookie `HttpOnly` +
-  `SameSite=Lax`). "Keep me signed in" lasts 30 days; without it, the session lasts 12 hours.
-- **Every route requires login**, except `/login` and `/static`.
-- **Passwords** are hashed with scrypt; minimum 8 characters. 5 consecutive failed attempts lock the
-  user out for 15 minutes.
-- Each person changes their own password under **My account** (☰ menu → Minha conta); this signs out
-  any other device logged in as that user.
-- **Managing users**: *Cadastros → Usuários* (create, reset password, deactivate) or from the
-  terminal:
+- **Login por usuário e senha**; a sessão fica guardada no servidor (cookie `HttpOnly` + `SameSite=Lax`).
+  "Manter conectado" vale 30 dias; sem marcar, a sessão dura 12 horas.
+- **Todas as rotas exigem login**, exceto `/login` e `/static`.
+- **Senhas** com hash scrypt, mínimo de 8 caracteres. 5 tentativas erradas seguidas bloqueiam o usuário por 15
+  minutos.
+- Cada pessoa troca a própria senha em **Minha conta** (menu ☰ → Minha conta); isso encerra qualquer outra
+  sessão aberta daquele usuário.
+- **Gerenciar usuários**: *Cadastros → Usuários* (criar, redefinir senha, desativar) ou pelo terminal:
 
 ```bash
 docker compose exec backend python -m app.usuarios listar
-docker compose exec backend python -m app.usuarios senha jdoe       # resets and ends open sessions
-docker compose exec backend python -m app.usuarios desativar jdoe   # / ativar
+docker compose exec backend python -m app.usuarios senha joao       # redefine e encerra as sessões abertas
+docker compose exec backend python -m app.usuarios desativar joao   # / ativar
 ```
 
-- **POSTs from another origin are rejected** (via the `Origin` header). Behind a proxy under a
-  different name, list it in `ORIGENS_PERMITIDAS`.
-- **HTTPS**: over plain HTTP, the password travels unencrypted. To expose the app beyond a trusted
-  local network, put it behind an HTTPS proxy (Caddy, nginx, Traefik) and set `COOKIE_SECURE=1`.
+- **POSTs de outra origem são recusados** (pelo cabeçalho `Origin`). Atrás de um proxy com outro nome, liste-o
+  em `ORIGENS_PERMITIDAS`.
+- **HTTPS**: em HTTP puro, a senha trafega sem criptografia. Para expor o app além de uma rede local confiável,
+  coloque-o atrás de um proxy HTTPS (Caddy, nginx, Traefik) e defina `COOKIE_SECURE=1`.
 
-## User guide
+## Guia de uso
 
-- **Dashboard** (`/`): overview of the selected month — total spent, how much is essential, what's
-  pending, spending vs. budget per person and category, credit cards, and meal/food vouchers.
-- **Transactions**: the period's expense list, with filters. "Duplicate" creates a new transaction
-  with the same data, handy for repeated purchases (e.g. groceries).
-- **Import**: upload a bank statement (OFX/CSV/XLSX/PDF) or a PDF invoice. Only outflows from the
-  reference month are imported; anything matching a recurring bill's keyword is linked automatically.
-- **Revisar → A validar**: transactions coming from an import, flagged for review. Each one can be
-  confirmed (with the right category), reconciled against an existing transaction, or deleted.
-- **Revisar → Duplicidades**: possible expenses counted twice (e.g. an imported card invoice and its
-  payment also showing up in the bank statement). Pick which one to keep, or mark them as "different
-  expenses" if it isn't actually a duplicate.
-- **Relatórios**: *Resumo mensal* tab (tables by category/group/person/card/bank/payment method, for
-  the period chosen in the selector) and *Análise* tab (top categories, card concentration, budget
-  overruns).
-- **Configurações → Recorrentes**: fixed monthly expenses (rent, subscriptions, loan installments...).
-  The "Gerar lançamentos do mês" button creates a pending transaction for every active recurring bill
-  that doesn't already have one for the month.
+- **Painel** (`/`): visão geral do mês selecionado — total gasto, quanto é essencial, o que está pendente, gasto
+  x orçamento por pessoa e categoria, cartões de crédito e vale alimentação/refeição.
+- **Lançamentos**: lista de gastos do período, com filtros. "Duplicar" cria um novo lançamento com os mesmos
+  dados, útil para compras repetidas (ex.: mercado).
+- **Importar**: suba um extrato (OFX/CSV/XLSX/PDF) ou uma fatura em PDF. Só as saídas do mês de referência são
+  importadas; o que casar com a palavra-chave de um recorrente é vinculado automaticamente.
+- **Revisar → A validar**: lançamentos vindos de uma importação, destacados para revisão. Cada um pode ser
+  confirmado (com a categoria certa), conciliado com um lançamento existente ou excluído.
+- **Revisar → Duplicidades**: possíveis gastos contados duas vezes (ex.: uma fatura de cartão importada e o
+  pagamento dela aparecendo também no extrato). Escolha qual manter, ou marque como "gastos diferentes" se não
+  for de fato uma duplicidade.
+- **Relatórios**: aba *Resumo mensal* (tabelas por categoria/grupo/pessoa/cartão/banco/forma de pagamento, no
+  período escolhido) e aba *Análise* (categorias que mais pesam, concentração por cartão, orçamentos
+  estourados).
+- **Configurações → Recorrentes**: gastos fixos mensais (aluguel, assinaturas, parcelas...). O botão "Gerar
+  lançamentos do mês" cria um lançamento pendente para cada recorrente ativo que ainda não tem um no mês.
 - **Configurações → Cadastros**:
-  - **Categorias**: name, group, whether it's essential, monthly budget, and whether it counts toward
-    totals (uncheck for categories like savings/investments, which shouldn't count as spending).
-  - **Cartões de crédito**: identifier, the account holder who owns the card, issuing bank, and
-    keywords (e.g. the card's last digits) to recognize it in imported invoices and statements.
-  - **Titulares**: the people who record expenses, each with their own monthly budget (`0` = no
-    budget), tracked on the dashboard.
-  - **Vale alimentação/refeição**: benefit cards (one per person), each with a monthly amount and
-    reload day; expenses paid with this method don't count toward spending totals (it's a benefit,
-    not money).
-  - **Parâmetros**: monthly savings goal and other general settings.
-  - **Usuários**: who can log in (distinct from "titular": a user is who logs in; a titular is who
-    the expense belongs to — they may or may not be the same person).
-- **Sobre**: installed version and release notes.
+  - **Categorias**: nome, grupo, se é essencial, orçamento mensal e se conta no total (desmarque para
+    categorias como poupança/aplicações, que não devem contar como gasto).
+  - **Cartões de crédito**: identificador, a pessoa dona do cartão, banco emissor e palavras-chave (ex.: os
+    últimos dígitos do cartão) para reconhecê-lo em faturas e extratos importados.
+  - **Titulares**: as pessoas que registram gastos, cada uma com seu próprio orçamento mensal (`0` = sem
+    orçamento), acompanhado no painel.
+  - **Vale alimentação/refeição**: cartões de benefício (um por pessoa), cada um com valor mensal e dia de
+    recarga; gastos pagos com essa forma não contam no total (é benefício, não dinheiro).
+  - **Parâmetros**: meta de economia mensal e outras configurações gerais.
+  - **Usuários**: quem pode entrar no sistema (diferente de "titular": usuário é quem faz login; titular é de
+    quem é o gasto — podem ou não ser a mesma pessoa).
+- **Sobre**: versão instalada e notas de cada versão.
 
-### Credit cards: the invoice is the source of truth
+### Cartão de crédito: a fatura é a fonte
 
-Card spending is recorded from the **total of the imported invoice** (category "Cartões de
-crédito"). Transactions entered manually with payment method "Cartão de crédito" (including recurring
-bills and receipts read via QR code) **don't count** toward totals, to avoid double-counting; they
-show up in the list tagged "não soma · na fatura". This applies to the dashboard, reports, category
-budgets, and the list total.
+O gasto no cartão entra pelo **total da fatura importada** (categoria "Cartões de crédito"). Lançamentos
+feitos à mão com forma de pagamento "Cartão de crédito" (inclusive recorrentes e notas lidas por QR) **não
+somam** no total, para não contar duas vezes; na lista aparecem com a etiqueta "não soma · na fatura". Vale
+para o painel, os relatórios, o orçamento por categoria e o total da lista.
 
-### Fixed lists in Cadastros
+### Ler boleto/conta de consumo
 
-**Grupo** (categories) and **Banco/Emissor** (cards) are closed lists, defined in `app/listas.py`. To
-add a new item, edit that file (or open an issue/PR); a value already saved on a record stays valid
-even if later removed from the list.
+Em **+ Novo gasto**, além do QR da nota fiscal, um segundo card lê boleto bancário ou conta de consumo (água,
+luz, gás, telefone) pela **linha digitável**, de três jeitos:
 
-## Telegram notifications
+- **Colar a linha digitável** direto (sempre funciona; 47 dígitos = boleto, 48 = conta de consumo/convênio).
+- **Subir o PDF**: o servidor extrai o texto (`pypdf`) e procura a linha digitável nele — funciona quando o
+  PDF não é uma imagem escaneada.
+- **Foto do código de barras**: decodificada no navegador (código de barras linear, diferente do QR).
 
-Optional feature: with no bot configured, everything stays off and the app works normally.
+O app calcula o valor e, para boleto bancário, o vencimento; confere os dígitos verificadores e avisa (sem
+travar) se algo não bater. Nada é gravado até você conferir e salvar no formulário.
 
-### Setting up the bot
+Na tela **Revisar faturas** (importação de PDFs em lote), o texto lido também é checado por sinais de
+"débito automático"; se encontrar, uma caixa vem pré-marcada e, mantida marcada, o lançamento sai com essa
+forma de pagamento em vez de "Boleto".
 
-1. On Telegram, talk to **@BotFather** and send `/newbot`. Pick a name and a username for the bot
-   (must end in `bot`, e.g. `my_expenses_bot`). It returns a **token** — save it.
-2. Send any message to the bot you just created (or add it to a group).
-3. Find the **chat id**: open `https://api.telegram.org/bot<TOKEN>/getUpdates` in a browser
-   (replacing `<TOKEN>` with the token from step 1) after sending the message from step 2; the
-   `"chat":{"id": ...}` field in the response is the chat id.
-4. Outside the project folder (so it isn't included in a backup, or synced if the project sits in a
-   cloud-synced folder like OneDrive/Dropbox), create these files:
-   - `%USERPROFILE%\.controle-gastos\telegram.token` (Windows) or `~/.controle-gastos/telegram.token`
-     (Linux/Mac): just the token, no extra line break.
-   - `...\telegram.chat`: just the chat id.
+### Listas fixas em Cadastros
 
-`docker-compose.yml` already reads these files as *Docker secrets*. Restart the backend after
-creating the files: `docker compose up -d`.
+**Grupo** (categorias) e **Banco/Emissor** (cartões) são listas fechadas, definidas em `app/listas.py`. Para
+adicionar um item novo, edite esse arquivo (ou abra uma issue/PR); um valor já salvo num registro continua
+válido mesmo se depois for removido da lista.
 
-### What each notification does
+## Avisos no Telegram
 
-1. **Activity** (real-time): every time someone creates, edits, or deletes a transaction. Batch
-   changes (import, "gerar recorrentes") turn into a single summary instead of one message per item.
-   `NOTIFICAR_DETALHES=0` sends only the category, no amount or description.
-2. **Budget exceeded** (real-time, alongside the activity notification): when a new or edited
-   transaction pushes a category past its monthly budget. Fires only the moment it crosses the line,
-   not on every following purchase that's already over.
-3. **Large expense** (real-time): a new transaction with an amount ≥ `GASTO_ALTO` (default R$ 500;
-   `0` disables it).
-4. **Bills due soon** (once a day): warns 3 days before, 1 day before, on the due day, and every day
-   while the bill stays unpaid and overdue.
-5. **Monthly closing summary** (once a day, only acts on the 1st): previous month's total, change
-   from the month before that, % of budget used, categories that went over, and the month's biggest
-   expenses.
+Funcionalidade opcional: sem um bot configurado, tudo fica desligado e o app funciona normalmente.
 
-Notifications 4 and 5 have no built-in scheduler inside the container; run them periodically (cron,
-Windows Task Scheduler, or similar):
+### Configurando o bot
+
+1. No Telegram, fale com o **@BotFather** e mande `/newbot`. Escolha um nome e um usuário para o bot (precisa
+   terminar em `bot`, ex.: `meus_gastos_bot`). Ele devolve um **token** — guarde-o.
+2. Envie qualquer mensagem para o bot recém-criado (ou adicione-o a um grupo).
+3. Descubra o **chat id**: abra `https://api.telegram.org/bot<TOKEN>/getUpdates` no navegador (trocando
+   `<TOKEN>` pelo token do passo 1), depois de enviar a mensagem do passo 2; o campo `"chat":{"id": ...}` na
+   resposta é o chat id.
+4. Fora da pasta do projeto (para não entrar num backup, nem sincronizar se o projeto estiver numa pasta na
+   nuvem como OneDrive/Dropbox), crie estes arquivos:
+   - `%USERPROFILE%\.controle-gastos\telegram.token` (Windows) ou `~/.controle-gastos/telegram.token`
+     (Linux/Mac): só o token, sem quebra de linha extra.
+   - `...\telegram.chat`: só o chat id.
+
+O `docker-compose.yml` já lê esses arquivos como *Docker secrets*. Reinicie o backend depois de criar os
+arquivos: `docker compose up -d`.
+
+### O que cada aviso faz
+
+1. **Atividade** (tempo real): toda vez que alguém cria, altera ou exclui um lançamento. Mudanças em lote
+   (importação, "gerar recorrentes") viram um único resumo em vez de uma mensagem por item.
+   `NOTIFICAR_DETALHES=0` envia só a categoria, sem valor nem descrição.
+2. **Orçamento estourado** (tempo real, junto com o aviso de atividade): quando um lançamento novo ou editado
+   faz uma categoria passar do orçamento mensal. Dispara só no momento em que cruza a linha, não em toda
+   compra seguinte que já está acima.
+3. **Gasto alto** (tempo real): um lançamento novo com valor ≥ `GASTO_ALTO` (padrão R$ 500; `0` desliga).
+4. **Contas perto do vencimento** (uma vez por dia): avisa 3 dias antes, 1 dia antes, no dia do vencimento e
+   todo dia enquanto a conta ficar em aberto e vencida.
+5. **Resumo do fechamento do mês** (uma vez por dia, só age no dia 1º): total do mês anterior, variação em
+   relação ao mês retrasado, % do orçamento usado, categorias que estouraram e os maiores gastos do mês.
+
+Os avisos 4 e 5 não têm agendador embutido no contêiner; rode-os periodicamente (cron, Agendador de Tarefas do
+Windows, ou similar):
 
 ```bash
-docker compose exec -T backend python -m app.lembretes   # every day
-docker compose exec -T backend python -m app.resumo      # every day (only acts on the 1st)
+docker compose exec -T backend python -m app.lembretes   # todo dia
+docker compose exec -T backend python -m app.resumo      # todo dia (só age no dia 1º)
 ```
 
-On Windows, `scripts\lembretes.ps1` and `scripts\resumo.ps1` make that call; an example schedule with
-Task Scheduler is in the comments of those scripts.
+No Windows, `scripts\lembretes.ps1` e `scripts\resumo.ps1` fazem essa chamada; um exemplo de agendamento com
+o Agendador de Tarefas está nos comentários desses scripts.
 
-## Backup and restore
+## Backup e restauração
 
-The `db` service backs up automatically every `BACKUP_HORAS` hours, checks each backup's integrity,
-and keeps `BACKUP_RETENCAO_DIAS` days of history (never fewer than `BACKUP_MINIMO` copies).
+O serviço `db` faz backup automático a cada `BACKUP_HORAS` horas, confere a integridade de cada backup e
+mantém `BACKUP_RETENCAO_DIAS` dias de histórico (nunca menos que `BACKUP_MINIMO` cópias).
 
 ```bash
-docker compose exec db backup.sh                                # back up now
-docker compose run --rm db restaurar.sh                         # list available backups
-docker compose cp db:/backups ./local-backups                   # copy them to your machine
+docker compose exec db backup.sh                                # backup agora
+docker compose run --rm db restaurar.sh                          # lista os backups disponíveis
+docker compose cp db:/backups ./backups-locais                   # copia para sua máquina
 ```
 
-**Restore** (the current database is saved first, before being overwritten):
+**Restaurar** (o banco atual é salvo antes de ser sobrescrito):
 
 ```bash
 docker compose stop backend
-docker compose run --rm db restaurar.sh controle-gastos-YYYYMMDD-HHMMSS.db
+docker compose run --rm db restaurar.sh controle-gastos-AAAAMMDD-HHMMSS.db
 docker compose start backend
 ```
 
-### Extra off-Docker backup (optional, encrypted)
+### Backup extra fora do Docker (opcional, cifrado)
 
-Besides the backup inside the volume, `scripts/backup-onedrive.ps1` (Windows) copies an **encrypted**
-copy into the project's `backups/` folder — useful if that folder is synced by a cloud service
-(OneDrive, Dropbox, etc.) as an off-site copy. Before the first run, generate the encryption password
-(once only; it's stored outside the project folder and never shown on screen):
+Além do backup dentro do volume, `scripts/backup-onedrive.ps1` (Windows) copia uma versão **cifrada** para a
+pasta `backups/` do projeto — útil se essa pasta for sincronizada por um serviço de nuvem (OneDrive, Dropbox
+etc.) como cópia externa. Antes da primeira execução, gere a senha de criptografia (só uma vez; fica guardada
+fora da pasta do projeto e nunca aparece na tela):
 
 ```bash
 .venv\Scripts\python.exe scripts\gerar_senha_backup.py
 ```
 
-To restore an encrypted backup: `scripts\cifrar_backup.py decifrar backups\<file>.db.enc` produces
-the `.db` next to it, which can then be copied to the volume and restored as above.
+Para restaurar um backup cifrado: `scripts\cifrar_backup.py decifrar backups\<arquivo>.db.enc` gera o `.db`
+ao lado, que pode então ser copiado para o volume e restaurado como acima.
 
-## Maintenance and security (Windows scripts)
+## Manutenção e segurança (scripts do Windows)
 
-The scripts under `scripts/` (PowerShell and Python) are optional and aimed at whoever administers a
-Windows install; on other systems, use the equivalent `docker compose` commands directly or adapt the
-logic to bash/cron.
+Os scripts em `scripts/` (PowerShell e Python) são opcionais e voltados para quem administra uma instalação
+Windows; em outros sistemas, use os comandos `docker compose` equivalentes direto ou adapte a lógica para
+bash/cron.
 
-- `atualizar.ps1`: rebuilds the images with updated base images (Alpine/Python/nginx) and restarts
-  without losing data (backs up first). With `-Bibliotecas`, it also audits and regenerates
-  `requirements.lock`.
-- `auditar.ps1`: scans the images for vulnerabilities (Trivy) and the Python dependencies
-  (pip-audit); with `-Notificar`, reports the result via Telegram.
-- `backup-onedrive.ps1`, `lembretes.ps1`, `resumo.ps1`: see the sections above.
+- `atualizar.ps1`: reconstrói as imagens com as bases atualizadas (Alpine/Python/nginx) e reinicia sem perder
+  dados (faz backup antes). Com `-Bibliotecas`, também audita e regenera o `requirements.lock`.
+- `auditar.ps1`: varre as imagens atrás de vulnerabilidades (Trivy) e as dependências Python (pip-audit); com
+  `-Notificar`, reporta o resultado pelo Telegram.
+- `backup-onedrive.ps1`, `lembretes.ps1`, `resumo.ps1`: veja as seções acima.
 
-Production images install the dependencies pinned in `requirements.lock` (exact, audited versions)
-and don't ship `pip`.
+As imagens de produção instalam as dependências travadas em `requirements.lock` (versões exatas, auditadas) e
+não trazem o `pip`.
 
-## Tests
+## Testes
 
 ```bash
 pip install -r requirements-dev.txt
 python -m pytest tests/ -v
 ```
 
-Each test runs against a temporary SQLite database, isolated from the real one. See `tests/README.md`.
+Cada teste roda num banco SQLite temporário, isolado do real. Veja `tests/README.md`.
 
-## Project layout
+## Estrutura do projeto
 
 ```
 /
 ├── app/
-│   ├── main.py                 dashboard, transactions, recurring bills, reports and registration routes
-│   ├── rotas_importacao.py     statement/invoice import and the "A validar" screen
-│   ├── rotas_duplicidades.py   "Verificar duplicidades" screen
-│   ├── beneficios.py           meal/food vouchers: tables and balance calculation
-│   ├── rotas_beneficios.py     benefit card registration and use deletion
-│   ├── rotas_auth.py           login, logout, my account, users
-│   ├── autenticacao.py         sessions, global route protection, security headers
-│   ├── seguranca.py            password hashing (scrypt) and password rules
-│   ├── avisos.py               Telegram notifications (activity, budget, large expense)
-│   ├── lembretes.py            bills-due-soon notification (scheduled)
-│   ├── resumo.py               monthly closing summary (scheduled)
-│   ├── nota_fiscal.py          receipt QR code: key, Sefaz lookup, memory by CNPJ
-│   ├── rotas_nota.py           "Ler QR da nota" (in New transaction)
-│   ├── rotas_sobre.py          About screen (version and release notes)
-│   ├── versao.py               app version and release notes
-│   ├── usuarios.py             terminal command for user management
-│   ├── importacao.py           OFX/CSV/XLSX/PDF parsing, PIX detection, etc. (pure functions)
-│   ├── duplicidades.py         suspicious pair scoring
-│   ├── relatorios.py           report queries (period, filter by titular, chart data)
-│   ├── database.py             SQLite connection, database creation and migration
-│   ├── templating.py           shared Jinja templates
-│   ├── templates/              screens (Jinja2)
-│   └── static/                 custom.css (Windows 11 style), icons/, vendor/ (local libraries)
+│   ├── main.py                  rotas do painel, lançamentos, recorrentes, relatórios e cadastros
+│   ├── rotas_importacao.py      importar extrato/faturas e tela "A validar"
+│   ├── rotas_duplicidades.py    tela "Verificar duplicidades"
+│   ├── beneficios.py            vale alimentação/refeição: tabelas e cálculo do saldo
+│   ├── rotas_beneficios.py      cadastro dos cartões de benefício e exclusão de usos
+│   ├── rotas_auth.py            login, logout, minha conta, usuários
+│   ├── autenticacao.py          sessões, proteção global das rotas, cabeçalhos de segurança
+│   ├── seguranca.py             hash de senha (scrypt) e regras de senha
+│   ├── avisos.py                avisos no Telegram (atividade, orçamento, gasto alto)
+│   ├── lembretes.py             aviso de contas perto do vencimento (agendado)
+│   ├── resumo.py                resumo do fechamento do mês (agendado)
+│   ├── nota_fiscal.py           QR de nota fiscal: chave, consulta na Sefaz, memória por CNPJ
+│   ├── rotas_nota.py            "Ler QR da nota" (em Novo lançamento)
+│   ├── boleto.py                linha digitável de boleto/conta de consumo: parser e extração de texto de PDF
+│   ├── rotas_boleto.py          "Ler linha digitável" / upload de PDF (em Novo lançamento)
+│   ├── rotas_sobre.py           tela Sobre (versão e notas de versão)
+│   ├── versao.py                versão do app e notas de versão
+│   ├── usuarios.py              comando de terminal para usuários
+│   ├── importacao.py            leitura de OFX/CSV/XLSX/PDF, detecção de PIX etc. (funções puras)
+│   ├── duplicidades.py          pontuação de pares suspeitos
+│   ├── relatorios.py            consultas dos relatórios (período, filtro por titular, dados do gráfico)
+│   ├── database.py              conexão SQLite, criação e migração do banco
+│   ├── templating.py            templates Jinja compartilhados
+│   ├── templates/               telas (Jinja2)
+│   └── static/                  custom.css (estilo Windows 11), icons/, vendor/ (bibliotecas locais)
 ├── database/
-│   ├── schema.sql              table structure
-│   └── seed.sql                the database starts empty (comments only)
+│   ├── schema.sql                estrutura das tabelas
+│   └── seed.sql                  o banco começa vazio (só comentários)
 ├── docker/
-│   ├── frontend/                Dockerfile + nginx.conf.template + proxy_backend.conf
+│   ├── frontend/                 Dockerfile + nginx.conf.template + proxy_backend.conf
 │   ├── backend/Dockerfile
-│   └── db/                     Dockerfile + servico.sh, backup.sh, restaurar.sh, saude.sh
-├── docker-compose.yml           frontend, backend and db (builds the images from source)
-├── scripts/                     optional Windows maintenance scripts (see section above)
-├── tests/                       pytest suite
-├── .env.example                 documented environment variables
-├── requirements.txt             dependencies (version ranges)
-├── requirements-dev.txt         extra dependencies to run the tests
-└── requirements.lock            exact, audited versions (production images install from this)
+│   └── db/                       Dockerfile + servico.sh, backup.sh, restaurar.sh, saude.sh
+├── docker-compose.yml            frontend, backend e db (constrói as imagens a partir do código)
+├── scripts/                      scripts opcionais de manutenção para Windows (veja a seção acima)
+├── tests/                        suíte pytest
+├── .env.example                  variáveis de ambiente documentadas
+├── requirements.txt              dependências (faixas de versão)
+├── requirements-dev.txt          dependências extras para rodar os testes
+└── requirements.lock             versões exatas e auditadas (as imagens de produção instalam deste)
 ```
 
-## Contributing
+## Contribuindo
 
-Issues and pull requests are welcome. Before opening a PR, run the test suite
-(`python -m pytest tests/ -v`) and, if possible, an equivalent of `scripts/auditar.ps1`
-(`pip-audit`, `trivy image`) to check for vulnerabilities.
+Issues e pull requests são bem-vindos. Antes de abrir um PR, rode a suíte de testes
+(`python -m pytest tests/ -v`) e, se possível, o equivalente a `scripts/auditar.ps1` (`pip-audit`,
+`trivy image`) para checar vulnerabilidades.
 
-If this project is useful to you, consider giving it a ⭐ — it helps others find it.
+Se este projeto foi útil para você, considere dar uma ⭐ — ajuda outras pessoas a encontrá-lo.
 
-## License
+## Licença
 
-MIT — see [LICENSE](LICENSE).
+MIT — veja [LICENSE](LICENSE).

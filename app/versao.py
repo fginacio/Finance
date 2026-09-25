@@ -8,6 +8,17 @@ o primeiro item.
 
 NOTAS = [
     {
+        "versao": "1.1.0", "data": "2026-09-25", "titulo": "Leitura de boleto/conta de consumo e débito automático nas faturas",
+        "itens": [
+            "Em Novo lançamento: além do QR da nota, agora dá para ler boleto ou conta de consumo (água, luz, gás, "
+            "telefone) pela linha digitável — colando os números, subindo o PDF (extrai o texto) ou fotografando o "
+            "código de barras (decodificado no navegador). Reconhece boleto bancário (47 dígitos, com vencimento) e "
+            "conta de consumo/convênio (48 dígitos).",
+            "Revisar faturas: o app percebe quando o texto do PDF já indica \"débito automático\" e mostra uma caixa "
+            "pré-marcada; deixando marcada, o lançamento sai com essa forma de pagamento em vez de \"Boleto\".",
+        ],
+    },
+    {
         "versao": "1.0.0", "data": "2026-09-21", "titulo": "Lançamento inicial",
         "itens": [
             "Lançamentos, recorrentes, cadastros (categorias, cartões, titulares, parâmetros) e painel do mês.",

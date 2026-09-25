@@ -318,7 +318,7 @@ def importar_faturas(request: Request, db=Depends(get_db), arquivos: list[Upload
             continue
         linha = {"arquivo": arq.filename, "erro": None, "texto": "", "valor": None, "vencimento": "", "referencia": "",
                  "recorrente_id": None, "status": "Pago", "alternativas": [], "avisos": [], "cartao_id": None,
-                 "eh_cartao": False, "zerada": False}
+                 "eh_cartao": False, "zerada": False, "debito_automatico": False}
         try:
             texto = ler_pdf_texto(arq.file.read(), _senhas(senha))
         except PdfSenhaErro as e:
@@ -333,7 +333,8 @@ def importar_faturas(request: Request, db=Depends(get_db), arquivos: list[Upload
             linha["cartao_id"] = cartao["id"] if cartao else None
             linha.update(texto=texto[:2500], valor=dados["valor"], vencimento=dados["vencimento"] or "",
                          referencia=dados["referencia"] or "", recorrente_id=rec["id"] if rec else None,
-                         alternativas=[v for v in dados["alternativas"] if v >= 1])
+                         alternativas=[v for v in dados["alternativas"] if v >= 1],
+                         debito_automatico=detectar_forma(texto) == "Débito automático")
             linha["status"] = "Pago" if dados["vencimento"] and dados["vencimento"] <= hoje else "Pendente"
             linha["zerada"] = dados["valor"] == 0
             if dados["valor"] and dados["vencimento"]:
@@ -362,6 +363,7 @@ def confirmar_faturas(
     referencia: list[str] = Form(default=[]), recorrente_id: list[str] = Form(default=[]),
     categoria_id: list[str] = Form(default=[]), status: list[str] = Form(default=[]),
     descricao: list[str] = Form(default=[]), cartao_id: list[str] = Form(default=[]),
+    debito_automatico: list[str] = Form(default=[]),
 ):
     resultados = []
     cat_cartoes = _id_cat_cartoes(db)
@@ -377,6 +379,7 @@ def confirmar_faturas(
         if not v or v < 0 or not data:
             resultados.append({"arquivo": nome, "ok": False, "msg": "Informe um valor e uma data válidos."})
             continue
+        deb = i < len(debito_automatico) and debito_automatico[i] == "1"
         cid = int(cartao_id[i]) if i < len(cartao_id) and cartao_id[i] else None
         if cid:
             resultados.append(_gravar_fatura_cartao(db, cid, cat_cartoes, nome, v, data, vencimento[i], referencia[i], status[i]))
@@ -394,8 +397,11 @@ def confirmar_faturas(
                 """SELECT id FROM lancamentos WHERE recorrente_id = ? AND status IN ('Pendente','Agendado')
                    AND substr(data, 1, 7) IN (?, ?) ORDER BY data LIMIT 1""", (rid, mes, data[:7])).fetchone()
             if pendente:
-                db.execute("UPDATE lancamentos SET valor=?, data=?, status=?, validado=1, origem='fatura', id_externo=? WHERE id=?",
-                           (v, data, status[i], chave, pendente["id"]))
+                sql = "UPDATE lancamentos SET valor=?, data=?, status=?, validado=1, origem='fatura', id_externo=?"
+                params = [v, data, status[i], chave]
+                if deb:
+                    sql += ", forma_pagamento='Débito automático'"
+                db.execute(sql + " WHERE id=?", (*params, pendente["id"]))
                 resultados.append({"arquivo": nome, "ok": True, "msg": f"Concluiu o lançamento pendente de “{rec['descricao']}”."})
                 continue
             ja_no_mes = db.execute("SELECT 1 FROM lancamentos WHERE recorrente_id = ? AND substr(data, 1, 7) = ?", (rid, mes)).fetchone()
@@ -406,7 +412,8 @@ def confirmar_faturas(
             db.execute(
                 """INSERT INTO lancamentos (data, categoria_id, descricao, titular_id, forma_pagamento, cartao_id, valor,
                    tipo, status, origem, id_externo, recorrente_id) VALUES (?,?,?,?,?,?,?,'Recorrente',?,'fatura',?,?)""",
-                (data, rec["categoria_id"], descricao[i] or rec["descricao"], rec["titular_id"], rec["forma_pagamento"],
+                (data, rec["categoria_id"], descricao[i] or rec["descricao"], rec["titular_id"],
+                 "Débito automático" if deb else rec["forma_pagamento"],
                  rec["cartao_id"], v, status[i], chave, rid))
             resultados.append({"arquivo": nome, "ok": True, "msg": f"Criou o lançamento de “{rec['descricao']}”."})
         else:
@@ -415,8 +422,8 @@ def confirmar_faturas(
                 continue
             db.execute(
                 """INSERT INTO lancamentos (data, categoria_id, descricao, forma_pagamento, valor, tipo, status, origem, id_externo)
-                   VALUES (?,?,?,'Boleto',?,'Variável',?,'fatura',?)""",
-                (data, int(categoria_id[i]), descricao[i] or nome, v, status[i], chave))
+                   VALUES (?,?,?,?,?,'Variável',?,'fatura',?)""",
+                (data, int(categoria_id[i]), descricao[i] or nome, "Débito automático" if deb else "Boleto", v, status[i], chave))
             resultados.append({"arquivo": nome, "ok": True, "msg": "Criou um lançamento avulso."})
     db.commit()
     _atualizar_duplicidades(db)
