@@ -8,6 +8,16 @@ o primeiro item.
 
 NOTAS = [
     {
+        "versao": "1.2.0", "data": "2026-10-01", "titulo": "Duplicidades agrupadas e \"Lançar mês seguinte\"",
+        "itens": [
+            "Verificar duplicidades: lançamentos idênticos (mesmo valor, data, categoria e descrição) agora aparecem "
+            "agrupados num único card, com um clique para manter um e remover todas as cópias — antes, cada cópia a "
+            "mais virava vários pares combinatórios na lista, dando a impressão de que as duplicidades cresciam sozinhas.",
+            "Em Lançamentos, o botão \"Duplicar\" virou \"Lançar mês seguinte\": a cópia já nasce com a data em +1 mês "
+            "(em vez da mesma data do original) e status \"Pendente\", evitando criar duas entradas idênticas sem querer.",
+        ],
+    },
+    {
         "versao": "1.1.0", "data": "2026-09-25", "titulo": "Leitura de boleto/conta de consumo e débito automático nas faturas",
         "itens": [
             "Em Novo lançamento: além do QR da nota, agora dá para ler boleto ou conta de consumo (água, luz, gás, "

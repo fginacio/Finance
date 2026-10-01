@@ -287,12 +287,21 @@ def excluir_lancamento(lid: int, db=Depends(get_db)):
 
 @app.post("/lancamentos/{lid}/duplicar")
 def duplicar_lancamento(lid: int, db=Depends(get_db)):
+    """Lança o mês seguinte a partir deste: mesmos dados, mas data em +1 mês (mesmo dia, ajustado ao
+    fim do mês se preciso) e status "Pendente" — ainda não foi pago. Evita criar uma cópia idêntica
+    à original (mesma data), que a tela de duplicidades acabaria sinalizando como suspeita."""
+    original = db.execute("SELECT data FROM lancamentos WHERE id = ?", (lid,)).fetchone()
+    if original is None:
+        return RedirectResponse("/lancamentos", status_code=303)
+    data_original = date.fromisoformat(original["data"])
+    ano, mes_num = (data_original.year, data_original.month + 1) if data_original.month < 12 else (data_original.year + 1, 1)
+    mes_seguinte = _dia_no_mes(f"{ano:04d}-{mes_num:02d}", data_original.day)
     cur = db.execute(
         """INSERT INTO lancamentos (data, categoria_id, descricao, titular_id, forma_pagamento,
            cartao_id, valor, tipo, status, parcela, observacoes)
-           SELECT data, categoria_id, descricao, titular_id, forma_pagamento,
-           cartao_id, valor, tipo, status, parcela, observacoes FROM lancamentos WHERE id = ?""",
-        (lid,),
+           SELECT ?, categoria_id, descricao, titular_id, forma_pagamento,
+           cartao_id, valor, tipo, 'Pendente', parcela, observacoes FROM lancamentos WHERE id = ?""",
+        (mes_seguinte, lid),
     )
     db.commit()
     if cur.rowcount == 0:
