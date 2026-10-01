@@ -42,14 +42,15 @@ você cria o primeiro usuário e configura tudo pelas telas (veja [Primeiro aces
   cartões de crédito, vale alimentação/refeição e tendência dos últimos meses.
 - **Relatórios**: resumo mensal com gráficos (período configurável: 1/3/6/12 meses) e análise (categorias que
   mais pesam, concentração por cartão, categorias estouradas), com filtro por pessoa.
-- **Lançamentos**: criar, editar, duplicar, excluir.
+- **Lançamentos**: criar, editar, lançar o mês seguinte a partir de um existente, excluir.
 - **Recorrentes**: cadastro de contas fixas mensais e geração dos lançamentos pendentes do mês com um clique;
   palavras-chave permitem reconhecê-los automaticamente em extratos/faturas importados.
 - **Importação** de extrato bancário (OFX, CSV, XLSX, PDF) e faturas em PDF (inclusive com senha).
 - **A validar**: tudo que vem de uma importação chega aqui destacado, pronto para categorizar, confirmar,
   conciliar ou excluir; o sistema aprende com o que você confirma.
 - **Duplicidades**: varre os lançamentos atrás de gastos contados duas vezes (por exemplo, uma fatura em PDF e o
-  pagamento correspondente aparecendo também no extrato).
+  pagamento correspondente aparecendo também no extrato); cópias idênticas aparecem agrupadas num único card, com
+  um clique para manter uma e remover as demais.
 - **Cadastros**: categorias (com orçamento mensal e se contam ou não no total), cartões de crédito,
   pessoas/titulares (cada uma com seu próprio orçamento), vale alimentação/refeição, parâmetros gerais e usuários
   do sistema.
@@ -198,15 +199,16 @@ docker compose exec backend python -m app.usuarios desativar joao   # / ativar
 
 - **Painel** (`/`): visão geral do mês selecionado — total gasto, quanto é essencial, o que está pendente, gasto
   x orçamento por pessoa e categoria, cartões de crédito e vale alimentação/refeição.
-- **Lançamentos**: lista de gastos do período, com filtros. "Duplicar" cria um novo lançamento com os mesmos
-  dados, útil para compras repetidas (ex.: mercado).
+- **Lançamentos**: lista de gastos do período, com filtros. "Lançar mês seguinte" cria um novo lançamento com os
+  mesmos dados, mas com a data em +1 mês e status "Pendente" — útil para contas fixas recorrentes (ex.: financiamento).
 - **Importar**: suba um extrato (OFX/CSV/XLSX/PDF) ou uma fatura em PDF. Só as saídas do mês de referência são
   importadas; o que casar com a palavra-chave de um recorrente é vinculado automaticamente.
 - **Revisar → A validar**: lançamentos vindos de uma importação, destacados para revisão. Cada um pode ser
   confirmado (com a categoria certa), conciliado com um lançamento existente ou excluído.
 - **Revisar → Duplicidades**: possíveis gastos contados duas vezes (ex.: uma fatura de cartão importada e o
   pagamento dela aparecendo também no extrato). Escolha qual manter, ou marque como "gastos diferentes" se não
-  for de fato uma duplicidade.
+  for de fato uma duplicidade. Cópias idênticas (mesmo valor, data, categoria e descrição) aparecem agrupadas
+  num único card, com um clique para manter uma e remover todas as outras de uma vez.
 - **Relatórios**: aba *Resumo mensal* (tabelas por categoria/grupo/pessoa/cartão/banco/forma de pagamento, no
   período escolhido) e aba *Análise* (categorias que mais pesam, concentração por cartão, orçamentos
   estourados).

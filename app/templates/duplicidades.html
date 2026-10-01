@@ -34,11 +34,40 @@
 {% block content %}
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
-    <h1 class="h4 mb-0">Verificar duplicidades <span class="badge text-bg-warning">{{ pares|length }}</span></h1>
+    <h1 class="h4 mb-0">Verificar duplicidades <span class="badge text-bg-warning">{{ grupos|length + pares|length }}</span></h1>
 </div>
 <p class="text-muted small">Varre <strong>todos</strong> os lançamentos, inclusive os já validados, atrás de pares com o <strong>mesmo valor</strong> em
     datas próximas (até 3 dias). Escolha qual manter: ao remover uma linha que veio do <strong>extrato</strong>, o lançamento mantido
     (fatura ou pendente) passa a valer com a <strong>data e a forma de pagamento do banco</strong>, e a linha removida não volta em novas importações.</p>
+
+{% for g in grupos %}
+<div class="card shadow-sm mb-3 border-warning"><div class="card-body">
+    <div class="mb-2 small"><span class="badge text-bg-danger">{{ g["itens"]|length }} cópias idênticas</span></div>
+    <div class="row g-3">
+        {% for l in g["itens"] %}
+        <div class="col-md-4">
+            <div class="border rounded p-3 h-100 d-flex flex-column">
+                <div class="d-flex justify-content-between">
+                    <span class="badge text-bg-secondary">#{{ l["id"] }}</span>
+                    <span class="badge {{ 'text-bg-info' if l['origem'] == 'extrato' else ('text-bg-primary' if l['origem'] == 'fatura' else 'text-bg-light border') }}">{{ l["origem"] or "digitado" }}</span>
+                </div>
+                <div class="fs-5 fw-bold mt-2">{{ brl(l["valor"]) }} <span class="fs-6 fw-normal text-muted">em {{ l["data"][8:] }}/{{ l["data"][5:7] }}/{{ l["data"][:4] }}</span></div>
+                <div>{{ l["descricao"] or "(sem descrição)" }}</div>
+                <div class="small text-muted mb-3">
+                    {{ l["categoria"] }} · {{ l["forma_pagamento"] }}{% if l["cartao"] %} ({{ l["cartao"] }}){% endif %} · {{ l["titular"] or "sem titular" }} · {{ l["status"] }}
+                </div>
+                <form method="post" action="/duplicidades/resolver-grupo" class="mt-auto"
+                      onsubmit="return confirm('Manter #{{ l["id"] }} e remover as outras {{ g["itens"]|length - 1 }} cópias?')">
+                    <input type="hidden" name="manter" value="{{ l['id'] }}">
+                    {% for outro in g["itens"] if outro["id"] != l["id"] %}<input type="hidden" name="remover" value="{{ outro['id'] }}">{% endfor %}
+                    <button class="btn btn-sm btn-primary">{{ icon('ok') }}Manter este e remover as outras</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div></div>
+{% endfor %}
 
 {% for p in pares %}
 <div class="card shadow-sm mb-3"><div class="card-body">
@@ -56,7 +85,9 @@
     </form>
 </div></div>
 {% else %}
+{% if not grupos %}
 <div class="alert alert-success">{{ icon('ok') }} Nenhuma duplicidade suspeita nos lançamentos.</div>
+{% endif %}
 {% endfor %}
 
 {% endblock %}

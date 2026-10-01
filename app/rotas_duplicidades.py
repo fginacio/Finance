@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 
 from app.database import CATEGORIA_PENDENTE, get_db
-from app.duplicidades import pares_suspeitos
+from app.duplicidades import grupos_identicos, pares_suspeitos
 from app.templating import templates
 
 router = APIRouter()
@@ -52,7 +52,16 @@ def _remover_duplicata(db, manter_id: int, remover_id: int) -> bool:
 
 @router.get("/duplicidades")
 def duplicidades(request: Request, db=Depends(get_db)):
-    return templates.TemplateResponse(request, "duplicidades.html", {"pares": pares_suspeitos(db)})
+    return templates.TemplateResponse(request, "duplicidades.html",
+                                       {"grupos": grupos_identicos(db), "pares": pares_suspeitos(db)})
+
+
+@router.post("/duplicidades/resolver-grupo")
+def resolver_grupo(db=Depends(get_db), manter: int = Form(...), remover: list[int] = Form(...)):
+    for remover_id in remover:
+        if remover_id != manter:
+            _remover_duplicata(db, manter, remover_id)
+    return RedirectResponse("/duplicidades", status_code=303)
 
 
 @router.post("/duplicidades/resolver")

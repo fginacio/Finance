@@ -37,8 +37,8 @@
                         <td><span class="badge {{ 'bg-success' if l['status'] == 'Pago' else 'bg-warning text-dark' }}">{{ l["status"] }}</span></td>
                         <td class="text-end text-nowrap">
                             <a href="/lancamentos/{{ l['id'] }}/editar" class="btn btn-sm btn-outline-secondary">{{ icon('editar') }}Editar</a>
-                            <button class="btn btn-sm btn-outline-secondary"
-                                    hx-post="/lancamentos/{{ l['id'] }}/duplicar">{{ icon('duplicar') }}Duplicar</button>
+                            <button class="btn btn-sm btn-outline-secondary" title="Cria um novo lançamento igual a este, mas com a data no mês seguinte e status Pendente"
+                                    hx-post="/lancamentos/{{ l['id'] }}/duplicar">{{ icon('duplicar') }}Lançar mês seguinte</button>
                             <button class="btn btn-sm btn-outline-danger"
                                     hx-delete="/lancamentos/{{ l['id'] }}"
                                     hx-confirm="Excluir este lançamento?"
