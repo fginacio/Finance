@@ -108,6 +108,16 @@
             });
         });
     });
+
+    /* Campos de valor: só dígitos, os dois últimos são os centavos (1250 vira 12,50). Sem separador de milhar, que o servidor não espera. */
+    document.addEventListener('input', function (e) {
+        var el = e.target;
+        if (el.tagName !== 'INPUT' || el.type !== 'text' || !/^valor(_estimado|_mensal)?$/.test(el.name)) { return; }
+        var d = el.value.replace(/\D/g, '').replace(/^0+/, '');
+        if (!d) { el.value = ''; return; }
+        while (d.length < 3) { d = '0' + d; }
+        el.value = d.slice(0, -2) + ',' + d.slice(-2);
+    });
     </script>
 </body>
 </html>

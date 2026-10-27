@@ -39,9 +39,13 @@ você cria o primeiro usuário e configura tudo pelas telas (veja [Primeiro aces
 ## Funcionalidades
 
 - **Painel** do mês: total gasto, gastos essenciais, pendências, gasto x orçamento por pessoa e por categoria,
-  cartões de crédito, vale alimentação/refeição e tendência dos últimos meses.
-- **Relatórios**: resumo mensal com gráficos (período configurável: 1/3/6/12 meses) e análise (categorias que
-  mais pesam, concentração por cartão, categorias estouradas), com filtro por pessoa.
+  cartões de crédito, vale alimentação/refeição, gráfico por grupo e dos últimos 12 meses (com a média). Filtros
+  para desmarcar pessoas, grupos, categorias, formas de pagamento ou essencial/não essencial, e buscar pela
+  descrição; o filtro fica lembrado no navegador.
+- **Relatórios**: resumo mensal com gráficos (período configurável: 1/3/6/12 meses), análise (categorias que
+  mais pesam, concentração por cartão, categorias estouradas), relatório do **vale alimentação/refeição** (saldo
+  mês a mês, recarga x uso, onde foi usado, lista de usos) e relatório **personalizado** (você escolhe agrupar
+  por, período, filtros e gráfico, e salva com um nome para reabrir).
 - **Lançamentos**: criar, editar, lançar o mês seguinte a partir de um existente, excluir.
 - **Recorrentes**: cadastro de contas fixas mensais e geração dos lançamentos pendentes do mês com um clique;
   palavras-chave permitem reconhecê-los automaticamente em extratos/faturas importados.
@@ -198,7 +202,10 @@ docker compose exec backend python -m app.usuarios desativar joao   # / ativar
 ## Guia de uso
 
 - **Painel** (`/`): visão geral do mês selecionado — total gasto, quanto é essencial, o que está pendente, gasto
-  x orçamento por pessoa e categoria, cartões de crédito e vale alimentação/refeição.
+  x orçamento por pessoa e categoria, cartões de crédito e vale alimentação/refeição, além dos gráficos por grupo
+  e dos últimos 12 meses (clique numa barra para abrir aquele mês). O botão **Filtros** permite desmarcar pessoas,
+  grupos (e as categorias de cada um), categorias, formas de pagamento e essencial/não essencial, ou buscar um
+  texto na descrição (ex.: "uber"). O filtro fica lembrado neste navegador até clicar em "Mostrar tudo".
 - **Lançamentos**: lista de gastos do período, com filtros. "Lançar mês seguinte" cria um novo lançamento com os
   mesmos dados, mas com a data em +1 mês e status "Pendente" — útil para contas fixas recorrentes (ex.: financiamento).
 - **Importar**: suba um extrato (OFX/CSV/XLSX/PDF) ou uma fatura em PDF. Só as saídas do mês de referência são
@@ -209,9 +216,16 @@ docker compose exec backend python -m app.usuarios desativar joao   # / ativar
   pagamento dela aparecendo também no extrato). Escolha qual manter, ou marque como "gastos diferentes" se não
   for de fato uma duplicidade. Cópias idênticas (mesmo valor, data, categoria e descrição) aparecem agrupadas
   num único card, com um clique para manter uma e remover todas as outras de uma vez.
-- **Relatórios**: aba *Resumo mensal* (tabelas por categoria/grupo/pessoa/cartão/banco/forma de pagamento, no
-  período escolhido) e aba *Análise* (categorias que mais pesam, concentração por cartão, orçamentos
-  estourados).
+- **Relatórios**:
+  - *Resumo mensal*: tabelas por categoria/grupo/pessoa/cartão/banco/forma de pagamento, no período escolhido.
+  - *Análise*: categorias que mais pesam, concentração por cartão, orçamentos estourados.
+  - *Vale alimentação/refeição*: saldo mês a mês por cartão (saldo anterior, recarga, usado, resta), gráfico de
+    recarga x uso, gasto por categoria e a lista de usos do período. Nada daqui soma nos gastos.
+  - *Personalizado*: monte o relatório escolhendo **agrupar por** (categoria, grupo, pessoa, cartão, banco, forma
+    de pagamento, descrição, tipo ou status), o **período** (datas livres ou "últimos N meses", que acompanha o
+    mês atual), colunas por mês ou só o total, o tipo de **gráfico**, quantas linhas mostrar (as maiores +
+    "Outros") e os mesmos filtros do painel. **Salvar** guarda a montagem com um nome; usar um nome que já existe
+    substitui o salvo.
 - **Configurações → Recorrentes**: gastos fixos mensais (aluguel, assinaturas, parcelas...). O botão "Gerar
   lançamentos do mês" cria um lançamento pendente para cada recorrente ativo que ainda não tem um no mês.
 - **Configurações → Cadastros**:
@@ -387,6 +401,10 @@ Cada teste roda num banco SQLite temporário, isolado do real. Veja `tests/READM
 │   ├── importacao.py            leitura de OFX/CSV/XLSX/PDF, detecção de PIX etc. (funções puras)
 │   ├── duplicidades.py          pontuação de pares suspeitos
 │   ├── relatorios.py            consultas dos relatórios (período, filtro por titular, dados do gráfico)
+│   ├── relatorio_vale.py        relatório do vale alimentação/refeição
+│   ├── relatorio_personalizado.py  relatório Personalizado (montagem, consulta, relatórios salvos)
+│   ├── rotas_relatorios.py      salvar/excluir relatórios personalizados
+│   ├── filtros.py               filtros de gastos do painel e do relatório Personalizado
 │   ├── database.py              conexão SQLite, criação e migração do banco
 │   ├── templating.py            templates Jinja compartilhados
 │   ├── templates/               telas (Jinja2)

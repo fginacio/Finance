@@ -30,19 +30,30 @@
                     <tr class="{{ 'table-warning' if not l['validado'] }}">
                         <td>{{ l["data"] }}</td>
                         <td>{{ l["categoria"] }}</td>
-                        <td>{% if not l["validado"] %}<a href="/validar" class="badge text-bg-warning text-decoration-none">a validar</a> {% endif %}{{ l["descricao"] or "-" }}{% if not l["conta"] %}{% if not l["contabiliza"] %} <span class="badge text-bg-secondary" title="Categoria marcada para não somar nos gastos (Cadastros > Categorias)">não soma · aplicação</span>{% else %} <span class="badge text-bg-secondary" title="Compra no cartão lançada à mão: o gasto vem da fatura, por isso não soma nos totais">não soma · na fatura</span>{% endif %}{% endif %}{% if l["parcela"] %} <span class="text-muted small">({{ l["parcela"] }})</span>{% endif %}</td>
+                        <td>{% if not l["validado"] %}<a href="/validar" class="badge text-bg-warning text-decoration-none">a validar</a> {% endif %}{{ l["descricao"] or "-" }}{% if not l["conta"] %}{% if l["vale"] %} <span class="badge text-bg-secondary" title="Pago com vale alimentação/refeição: não é dinheiro, não soma nos gastos (só desconta do saldo do cartão)">não soma · vale alimentação</span>{% elif not l["contabiliza"] %} <span class="badge text-bg-secondary" title="Categoria marcada para não somar nos gastos (Cadastros > Categorias)">não soma · aplicação</span>{% else %} <span class="badge text-bg-secondary" title="Compra no cartão lançada à mão: o gasto vem da fatura, por isso não soma nos totais">não soma · na fatura</span>{% endif %}{% endif %}{% if l["parcela"] %} <span class="text-muted small">({{ l["parcela"] }})</span>{% endif %}</td>
                         <td>{{ l["titular"] or "-" }}</td>
                         <td>{{ l["cartao"] or l["forma_pagamento"] }}</td>
                         <td class="text-end">R$ {{ "%.2f"|format(l["valor"])|replace(".", ",") }}</td>
                         <td><span class="badge {{ 'bg-success' if l['status'] == 'Pago' else 'bg-warning text-dark' }}">{{ l["status"] }}</span></td>
                         <td class="text-end text-nowrap">
+                            {% if l["vale"] %}
+                            <a href="/cadastros/beneficios" class="btn btn-sm btn-outline-secondary">{{ icon('editar') }}Ver cartão</a>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    hx-delete="/beneficios/usos/{{ l['id'] }}"
+                                    hx-confirm="Excluir este uso do vale alimentação/refeição?"
+                                    hx-target="closest tr" hx-swap="outerHTML">{{ icon('excluir') }}Excluir</button>
+                            {% else %}
                             <a href="/lancamentos/{{ l['id'] }}/editar" class="btn btn-sm btn-outline-secondary">{{ icon('editar') }}Editar</a>
-                            <button class="btn btn-sm btn-outline-secondary" title="Cria um novo lançamento igual a este, mas com a data no mês seguinte e status Pendente"
-                                    hx-post="/lancamentos/{{ l['id'] }}/duplicar">{{ icon('duplicar') }}Lançar mês seguinte</button>
+                            <form method="post" action="/lancamentos/{{ l['id'] }}/duplicar" class="d-inline"
+                                  title="Cria um novo lançamento igual a este, mas com a data no mês seguinte e status Pendente"
+                                  onsubmit="this.querySelector('button').disabled = true">
+                                <button class="btn btn-sm btn-outline-secondary">{{ icon('duplicar') }}Lançar mês seguinte</button>
+                            </form>
                             <button class="btn btn-sm btn-outline-danger"
                                     hx-delete="/lancamentos/{{ l['id'] }}"
                                     hx-confirm="Excluir este lançamento?"
                                     hx-target="closest tr" hx-swap="outerHTML">{{ icon('excluir') }}Excluir</button>
+                            {% endif %}
                         </td>
                     </tr>
                     {% else %}

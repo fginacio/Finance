@@ -48,6 +48,7 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <h1 class="h4 mb-0">Relatórios</h1>
+    {% if aba in ("resumo", "analise") %}
     <form method="get" class="d-flex flex-wrap gap-3 align-items-center">
         <input type="hidden" name="aba" value="{{ aba }}">
         <div class="d-flex flex-wrap gap-3 align-items-center" role="group" aria-label="Filtrar por titular">
@@ -73,14 +74,31 @@
         <input type="month" name="mes" value="{{ mes }}" class="form-control" aria-label="Mês" onchange="this.form.submit()">
         {% endif %}
     </form>
+    {% elif aba == "vale" %}
+    <form method="get" class="d-flex flex-wrap gap-3 align-items-center">
+        <input type="hidden" name="aba" value="vale">
+        <div class="d-flex flex-nowrap gap-2 align-items-center">
+            <label class="small text-muted mb-0 text-nowrap" for="sel-meses-vale">Período</label>
+            <select class="form-select form-select-sm w-auto" name="meses" id="sel-meses-vale" onchange="this.form.submit()">
+                {% for opcao in (1, 3, 6, 12) %}<option value="{{ opcao }}" {{ 'selected' if opcao == meses }}>{{ opcao }} {{ "mês" if opcao == 1 else "meses" }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="d-flex flex-nowrap gap-2 align-items-center">
+            <label class="small text-muted mb-0 text-nowrap">até</label>
+            <input type="month" name="mes" value="{{ mes }}" class="form-control" onchange="this.form.submit()">
+        </div>
+    </form>
+    {% endif %}
 </div>
 
 <ul class="nav nav-tabs mb-3">
     <li class="nav-item"><a class="nav-link {{ 'active' if aba == 'resumo' }}" href="/relatorios?aba=resumo&mes={{ mes }}&meses={{ meses }}{{ filtro_url }}">Resumo mensal</a></li>
     <li class="nav-item"><a class="nav-link {{ 'active' if aba == 'analise' }}" href="/relatorios?aba=analise&mes={{ mes }}&meses={{ meses }}{{ filtro_url }}">Análise</a></li>
+    <li class="nav-item"><a class="nav-link {{ 'active' if aba == 'vale' }}" href="/relatorios?aba=vale&mes={{ mes }}&meses={{ meses if meses > 1 else 6 }}">Vale alimentação/refeição</a></li>
+    <li class="nav-item"><a class="nav-link {{ 'active' if aba == 'personalizado' }}" href="/relatorios?aba=personalizado">Personalizado</a></li>
 </ul>
 
-{% if r.filtrado %}
+{% if r and r.filtrado %}
 <div class="alert alert-info py-2 small">Mostrando só: <strong>{{ r.sel|join(", ") }}</strong>. O orçamento por categoria é da família toda, por isso não é comparado neste filtro.
     <a href="/relatorios?aba={{ aba }}&mes={{ mes }}&meses={{ meses }}">Mostrar todos</a></div>
 {% endif %}
@@ -127,6 +145,11 @@
     </div>
 </div>
 
+{% if r.vale_periodo > 0 %}
+<div class="text-muted small mb-3">{{ icon('ok') }} Vale alimentação/refeição usado no período: <strong>{{ brl(r.vale_periodo) }}</strong>
+    (benefício, não soma nos totais acima — ver <a href="/cadastros/beneficios">Cadastros &gt; Vale alimentação/refeição</a>).</div>
+{% endif %}
+
 {% set g = r.grafico %}
 <div class="card shadow-sm mb-3"><div class="card-body">
     <h2 class="h6 mb-3">Gastos por mês{% if r.filtrado %} ({{ r.sel|join(", ") }}){% endif %}</h2>
@@ -145,7 +168,7 @@
     {% endfor %}
 </div></div>
 
-{% else %}
+{% elif aba == "analise" %}
 <div class="row g-3">
     <div class="col-lg-6">
         <div class="card shadow-sm h-100"><div class="card-body">
@@ -201,6 +224,10 @@
         </div></div>
     </div>
 </div>
+{% elif aba == "vale" %}
+{% include "_relatorio_vale.html" %}
+{% else %}
+{% include "_relatorio_personalizado.html" %}
 {% endif %}
 
 <script src="/static/vendor/chart.js-4.4.4/chart.umd.min.js"></script>
@@ -265,6 +292,66 @@
         });
     }
 
+    var CORES = ["#0d6efd", "#198754", "#fd7e14", "#6f42c1", "#dc3545", "#20c997", "#d63384", "#ffc107", "#0dcaf0", "#6c757d",
+                 "#3d8bfd", "#479f76", "#fd9843", "#8c68cd", "#e35d6a", "#4dd4ac", "#de5c9d", "#ffcd39", "#3dd5f3", "#adb5bd", "#495057"];
+    var eixoBrl = { grid: { color: corGrade }, ticks: { callback: function (v) { return brl(v); } } };
+
+    // vale: recarga x uso por mês, com o saldo que sobrou
+    var elVale = document.getElementById("graficoVale");
+    if (elVale && window.__graficoVale) {
+        var v = window.__graficoVale;
+        new Chart(elVale, {
+            data: { labels: v.map(function (x) { return nomemes(x.mes); }), datasets: [
+                { type: "bar", label: "Recarga", data: v.map(function (x) { return x.recarga; }), backgroundColor: "#198754", borderRadius: 3, maxBarThickness: 32 },
+                { type: "bar", label: "Usado", data: v.map(function (x) { return x.usado; }), backgroundColor: "#fd7e14", borderRadius: 3, maxBarThickness: 32 },
+                { type: "line", label: "Saldo no fim do mês", data: v.map(function (x) { return x.restante; }), borderColor: "#0d6efd",
+                  backgroundColor: "#0d6efd", tension: .25, pointRadius: 3 }
+            ] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: eixoBrl },
+                plugins: { legend: { position: "bottom" }, tooltip: { callbacks: { label: function (c) { return c.dataset.label + ": " + brl(c.parsed.y); } } } } }
+        });
+    }
+    var elValeCat = document.getElementById("graficoValeCat");
+    if (elValeCat && window.__graficoValeCat) {
+        var vc = window.__graficoValeCat;
+        new Chart(elValeCat, {
+            type: "doughnut",
+            data: { labels: vc.map(function (x) { return x.nome; }), datasets: [{ data: vc.map(function (x) { return x.total; }), backgroundColor: CORES }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: "60%",
+                plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } }, tooltip: { callbacks: { label: function (c) { return c.label + ": " + brl(c.parsed); } } } } }
+        });
+    }
+
+    // personalizado: barras empilhadas / linhas por mês, ou pizza do total
+    var elP = document.getElementById("graficoPersonalizado");
+    if (elP && window.__graficoPersonalizado) {
+        var p = window.__graficoPersonalizado;
+        if (p.tipo === "pizza" || !p.por_mes) {
+            new Chart(elP, {
+                type: p.tipo === "pizza" ? "doughnut" : "bar",
+                data: { labels: p.linhas.map(function (l) { return l.nome; }),
+                        datasets: [{ label: "Total", data: p.linhas.map(function (l) { return l.total; }), backgroundColor: CORES, borderRadius: 3 }] },
+                options: { responsive: true, maintainAspectRatio: false, indexAxis: p.tipo === "pizza" ? "x" : "y",
+                    scales: p.tipo === "pizza" ? {} : { x: eixoBrl, y: { grid: { display: false } } },
+                    plugins: { legend: { display: p.tipo === "pizza", position: "right", labels: { boxWidth: 12 } },
+                        tooltip: { callbacks: { label: function (c) { return c.label + ": " + brl(p.tipo === "pizza" ? c.parsed : c.parsed.x); } } } } }
+            });
+        } else {
+            var linhas = p.tipo === "linhas";
+            new Chart(elP, {
+                type: linhas ? "line" : "bar",
+                data: { labels: p.meses.map(nomemes), datasets: p.linhas.map(function (l, i) {
+                    return { label: l.nome, data: l.valores, backgroundColor: CORES[i % CORES.length], borderColor: CORES[i % CORES.length],
+                             borderRadius: 3, maxBarThickness: 40, tension: .25, pointRadius: 2 };
+                }) },
+                options: { responsive: true, maintainAspectRatio: false,
+                    scales: { x: { stacked: !linhas, grid: { display: false } }, y: Object.assign({ stacked: !linhas }, eixoBrl) },
+                    plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } },
+                        tooltip: { callbacks: { label: function (c) { return c.dataset.label + ": " + brl(c.parsed.y); },
+                            footer: linhas ? undefined : function (itens) { return "Total: " + brl(itens.reduce(function (s, i) { return s + i.parsed.y; }, 0)); } } } } }
+            });
+        }
+    }
 })();
 </script>
 

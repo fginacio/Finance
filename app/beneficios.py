@@ -82,8 +82,9 @@ def resumo_do_mes(db, mes: str) -> dict:
         usado = _usos(db, b["id"], ultimo, desde=max(primeiro, date.fromisoformat(b["inicio"])))
         saldo_ant = saldo_em(db, b, anterior) if anterior >= date.fromisoformat(b["inicio"]) else b["saldo_inicial"]
         disponivel = saldo_ant + recarga
+        restante = round(disponivel - usado, 2) + 0.0  # sem resíduo de centavos nem "-0,00"
         lista.append({"id": b["id"], "nome": b["nome"], "titular": b["titular"], "saldo_anterior": saldo_ant,
-                      "recarga": recarga, "disponivel": disponivel, "usado": usado, "restante": disponivel - usado,
+                      "recarga": recarga, "disponivel": disponivel, "usado": usado, "restante": restante,
                       "pct_usado": (usado / disponivel * 100) if disponivel > 0 else 0.0})
-    return {"lista": lista, "usado": sum(x["usado"] for x in lista), "restante": sum(x["restante"] for x in lista),
+    return {"lista": lista, "usado": sum(x["usado"] for x in lista), "restante": round(sum(x["restante"] for x in lista), 2) + 0.0,
             "disponivel": sum(x["disponivel"] for x in lista)}

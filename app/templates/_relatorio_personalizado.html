@@ -1,0 +1,173 @@
+{# Aba "Personalizado" de relatorios.html: montador (agrupar, período, filtros, gráfico) + relatórios salvos #}
+{% from "_macros.html" import brl, nomemes, pct, icon %}
+{% macro num(v) %}{{ "{:,.2f}".format(v).replace(",", "X").replace(".", ",").replace("X", ".") if v else "-" }}{% endmacro %}
+{% macro caixas(dim, valores) %}
+{% for v in valores %}
+<div class="form-check mb-0"><input class="form-check-input" type="checkbox" name="com_{{ dim }}" value="{{ v }}" id="p-{{ dim }}-{{ loop.index }}"
+     {{ 'checked' if mt.filtro.inclui(dim, v) }}><label class="form-check-label" for="p-{{ dim }}-{{ loop.index }}">{{ v }}</label></div>
+{% endfor %}
+{% endmacro %}
+
+{% if salvos %}
+<div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+    <span class="small text-muted">Salvos:</span>
+    {% for s in salvos %}
+    <span class="btn-group btn-group-sm">
+        <a class="btn {{ 'btn-primary' if s.params == query_atual else 'btn-outline-primary' }}" href="/relatorios?aba=personalizado&{{ s.params }}">{{ s.nome }}</a>
+        <form method="post" action="/relatorios/salvos/{{ s.id }}/excluir" class="d-inline" data-msg="Excluir o relatório salvo {{ s.nome }}?" onsubmit="return confirm(this.dataset.msg)">
+            <button class="btn btn-outline-secondary btn-sm" title="Excluir" aria-label="Excluir {{ s.nome }}">{{ icon('fechar') }}</button></form>
+    </span>
+    {% endfor %}
+</div>
+{% endif %}
+
+<form method="get" class="card shadow-sm mb-3" id="form-montador"><div class="card-body">
+    <input type="hidden" name="aba" value="personalizado"><input type="hidden" name="filtrar" value="1">
+    <div class="row g-3 align-items-end">
+        <div class="col-sm-6 col-lg-3">
+            <label class="form-label small fw-semibold mb-1" for="p-agrupar">Agrupar por</label>
+            <select class="form-select form-select-sm" name="agrupar" id="p-agrupar">
+                {% for k, (rot, _) in agrupamentos.items() %}<option value="{{ k }}" {{ 'selected' if k == mt.agrupar }}>{{ rot }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <label class="form-label small fw-semibold mb-1" for="p-ultimos">Período</label>
+            <select class="form-select form-select-sm" name="ultimos" id="p-ultimos">
+                <option value="0" {{ 'selected' if not mt.ultimos }}>Datas escolhidas</option>
+                {% for n in ultimos_opcoes %}<option value="{{ n }}" {{ 'selected' if n == mt.ultimos }}>Últimos {{ n }} meses (acompanha o mês atual)</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-6 col-lg-3" data-datas>
+            <label class="form-label small fw-semibold mb-1" for="p-de">De</label>
+            <input type="month" class="form-control form-control-sm" name="de" id="p-de" value="{{ mt.de }}">
+        </div>
+        <div class="col-6 col-lg-3" data-datas>
+            <label class="form-label small fw-semibold mb-1" for="p-ate">Até</label>
+            <input type="month" class="form-control form-control-sm" name="ate" id="p-ate" value="{{ mt.ate }}">
+        </div>
+        <div class="col-sm-4 col-lg-3">
+            <label class="form-label small fw-semibold mb-1" for="p-colunas">Colunas</label>
+            <select class="form-select form-select-sm" name="colunas" id="p-colunas">
+                <option value="mes" {{ 'selected' if mt.por_mes }}>Um mês por coluna</option>
+                <option value="total" {{ 'selected' if not mt.por_mes }}>Só o total do período</option>
+            </select>
+        </div>
+        <div class="col-sm-4 col-lg-3">
+            <label class="form-label small fw-semibold mb-1" for="p-grafico">Gráfico</label>
+            <select class="form-select form-select-sm" name="grafico" id="p-grafico">
+                {% for k, rot in graficos.items() %}<option value="{{ k }}" {{ 'selected' if k == mt.grafico }}>{{ rot }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-sm-4 col-lg-3">
+            <label class="form-label small fw-semibold mb-1" for="p-limite">Linhas</label>
+            <select class="form-select form-select-sm" name="limite" id="p-limite">
+                {% for n in limites %}<option value="{{ n }}" {{ 'selected' if n == mt.limite }}>{{ "Todas" if not n else "Maiores " ~ n ~ " + Outros" }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-sm-12 col-lg-3">
+            <label class="form-label small fw-semibold mb-1" for="p-busca">Descrição contém</label>
+            <input type="search" class="form-control form-control-sm" name="busca" id="p-busca" value="{{ mt.filtro.busca }}" placeholder="ex.: uber, farmácia">
+        </div>
+    </div>
+
+    <details class="mt-3" {{ 'open' if mt.filtro.excluidos.values()|select|list }}>
+        <summary class="small fw-semibold">Filtros: o que entra no relatório
+            {% if mt.filtro.ativo %}<span class="badge text-bg-primary ms-1">ativo</span>{% endif %}</summary>
+        <div class="row g-3 mt-1">
+            <div class="col-sm-6 col-lg-3"><div class="fw-semibold small mb-1">{{ dimensoes.titular[0] }} <a href="#" class="small fw-normal" data-marcar="titular">todos</a></div>{{ caixas("titular", ops.titular) }}</div>
+            <div class="col-sm-6 col-lg-3"><div class="fw-semibold small mb-1">{{ dimensoes.forma[0] }} <a href="#" class="small fw-normal" data-marcar="forma">todas</a></div>{{ caixas("forma", ops.forma) }}</div>
+            <div class="col-sm-6 col-lg-3"><div class="fw-semibold small mb-1">{{ dimensoes.essencial[0] }}</div>{{ caixas("essencial", ops.essencial) }}</div>
+            <div class="col-12">
+                <div class="fw-semibold small mb-1">Grupos e categorias <a href="#" class="small fw-normal" data-marcar="grupo,categoria">todos</a></div>
+                <div class="row g-2">
+                    {% for g, cats in ops.categorias_por_grupo.items() %}
+                    {% set gi = loop.index %}
+                    <div class="col-sm-6 col-lg-3" data-grupo-bloco>
+                        <div class="form-check mb-0"><input class="form-check-input" type="checkbox" name="com_grupo" value="{{ g }}" id="p-g-{{ gi }}"
+                             data-grupo {{ 'checked' if mt.filtro.inclui('grupo', g) }}><label class="form-check-label fw-semibold" for="p-g-{{ gi }}">{{ g }}</label></div>
+                        {% for c in cats %}
+                        <div class="form-check mb-0 ms-3"><input class="form-check-input" type="checkbox" name="com_categoria" value="{{ c }}" id="p-c-{{ gi }}-{{ loop.index }}"
+                             {{ 'checked' if mt.filtro.inclui('categoria', c) }}><label class="form-check-label small" for="p-c-{{ gi }}-{{ loop.index }}">{{ c }}</label></div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </details>
+
+    <div class="d-flex flex-wrap gap-2 mt-3">
+        <button class="btn btn-primary btn-sm" type="submit">{{ icon('relatorios') }}Gerar relatório</button>
+        <a class="btn btn-outline-secondary btn-sm" href="/relatorios?aba=personalizado">Recomeçar</a>
+    </div>
+</div></form>
+
+<form method="post" action="/relatorios/salvos" class="d-flex flex-wrap gap-2 align-items-center mb-3">
+    <input type="hidden" name="params" value="{{ query_atual }}">
+    <input type="text" class="form-control form-control-sm w-auto" name="nome" maxlength="60" required placeholder="Nome para salvar este relatório"
+           aria-label="Nome do relatório" list="nomes-salvos">
+    <datalist id="nomes-salvos">{% for s in salvos %}<option value="{{ s.nome }}">{% endfor %}</datalist>
+    <button class="btn btn-outline-primary btn-sm" type="submit">{{ icon('salvar') }}Salvar</button>
+    <span class="small text-muted">Mesmo nome substitui o salvo.</span>
+</form>
+
+{% if mt.filtro.ativo %}
+<div class="alert alert-info py-2 small"><strong>Filtro:</strong> {{ mt.filtro.resumo()|join(" · ") }}.</div>
+{% endif %}
+
+<div class="card shadow-sm"><div class="card-body">
+    <h2 class="h6 mb-1">Gastos por {{ p.rotulo|lower }}</h2>
+    <p class="small text-muted">{{ nomemes(p.meses[0]) }} a {{ nomemes(p.meses[-1]) }} ({{ p.meses|length }} {{ "mês" if p.meses|length == 1 else "meses" }}) ·
+        {{ p.total_geral.qtd }} lançamento(s) · total {{ brl(p.total_geral.total) }}</p>
+    {% if not p.linhas %}
+    <span class="text-muted">Nenhum gasto com esses critérios.</span>
+    {% else %}
+    {% if mt.grafico != "nenhum" %}
+    <div style="height: {{ 320 if mt.por_mes or mt.grafico == 'pizza' else [160, p.linhas|length * 28 + 40]|max }}px" class="mb-3"><canvas id="graficoPersonalizado"></canvas></div>
+    <script>window.__graficoPersonalizado = {{ {"tipo": mt.grafico, "por_mes": mt.por_mes, "meses": p.meses, "linhas": p.linhas}|tojson }};</script>
+    {% endif %}
+    <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle small mb-0 tabela-meses">
+        <thead><tr><th class="col-fixa">{{ p.rotulo }}</th>
+            {% if mt.por_mes %}{% for m in p.meses %}<th class="text-end">{{ nomemes(m) }}</th>{% endfor %}{% endif %}
+            <th class="text-end">Total</th><th class="text-end">Média/mês</th><th class="text-end">%</th><th class="text-end">Qtd.</th></tr></thead>
+        <tbody>
+        {% for l in p.linhas %}
+        <tr class="{{ 'text-muted' if l.outros }}"><td class="col-fixa text-nowrap">{{ l.nome }}</td>
+            {% if mt.por_mes %}{% for x in l["valores"] %}<td class="text-end {{ 'text-muted' if not x }}">{{ num(x) }}</td>{% endfor %}{% endif %}
+            <td class="text-end fw-semibold">{{ brl(l.total) }}</td><td class="text-end">{{ brl(l.media) }}</td>
+            <td class="text-end">{{ pct(l.pct) }}</td><td class="text-end text-muted">{{ l.qtd }}</td></tr>
+        {% endfor %}
+        <tr class="table-light fw-bold"><td class="col-fixa">TOTAL</td>
+            {% if mt.por_mes %}{% for x in p.total_geral["valores"] %}<td class="text-end">{{ num(x) }}</td>{% endfor %}{% endif %}
+            <td class="text-end">{{ brl(p.total_geral.total) }}</td><td class="text-end">{{ brl(p.total_geral.total / p.meses|length) }}</td>
+            <td></td><td class="text-end">{{ p.total_geral.qtd }}</td></tr>
+        </tbody>
+    </table>
+    </div>
+    {% endif %}
+</div></div>
+
+<script>
+(function () {
+    var form = document.getElementById("form-montador");
+    form.querySelectorAll("[data-marcar]").forEach(function (a) {
+        a.addEventListener("click", function (e) {
+            e.preventDefault();
+            var caixas = [];
+            a.dataset.marcar.split(",").forEach(function (d) { caixas = caixas.concat([].slice.call(form.querySelectorAll('[name="com_' + d + '"]'))); });
+            var marcar = caixas.some(function (c) { return !c.checked; });
+            caixas.forEach(function (c) { c.checked = marcar; });
+        });
+    });
+    form.querySelectorAll("[data-grupo]").forEach(function (g) {
+        g.addEventListener("change", function () {
+            g.closest("[data-grupo-bloco]").querySelectorAll('[name="com_categoria"]').forEach(function (c) { c.checked = g.checked; });
+        });
+    });
+    // período relativo: as datas não se aplicam
+    var ultimos = document.getElementById("p-ultimos");
+    function datas() { form.querySelectorAll("[data-datas] input").forEach(function (i) { i.disabled = ultimos.value !== "0"; }); }
+    ultimos.addEventListener("change", datas); datas();
+})();
+</script>
