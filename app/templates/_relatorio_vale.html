@@ -1,0 +1,119 @@
+{# Aba "Vale alimentação/refeição" de relatorios.html: saldo mês a mês, onde foi usado, evolução e lista de usos #}
+{% from "_macros.html" import brl, nomemes, pct, icon %}
+{% macro num(v) %}{{ "{:,.2f}".format(v).replace(",", "X").replace(".", ",").replace("X", ".") if v else "-" }}{% endmacro %}
+
+<p class="text-muted small">{{ icon('info') }} Benefício, não dinheiro: nada desta aba soma nos gastos. Período: {{ nomemes(v.meses[0]) }} a {{ nomemes(v.meses[-1]) }}.
+    <a href="/cadastros/beneficios">Gerenciar cartões e usos</a></p>
+
+{% if not v.por_cartao and not v.usos %}
+<div class="card shadow-sm"><div class="card-body text-muted">Nenhum cartão de vale ativo nem uso no período.</div></div>
+{% else %}
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card shadow-sm h-100"><div class="card-body py-3">
+        <div class="small text-muted">Saldo no fim de {{ nomemes(v.meses[-1]) }}</div><div class="h5 mb-0">{{ brl(v.saldo_atual) }}</div>
+    </div></div></div>
+    <div class="col-6 col-lg-3"><div class="card shadow-sm h-100"><div class="card-body py-3">
+        <div class="small text-muted">Usado no período</div><div class="h5 mb-0">{{ brl(v.total_usado) }}</div>
+        <div class="small text-muted">recargas: {{ brl(v.total_recarga) }}</div>
+    </div></div></div>
+    <div class="col-6 col-lg-3"><div class="card shadow-sm h-100"><div class="card-body py-3">
+        <div class="small text-muted">Média de uso por mês</div><div class="h5 mb-0">{{ brl(v.media_uso) }}</div>
+        <div class="small text-muted">meses com uso</div>
+    </div></div></div>
+    <div class="col-6 col-lg-3"><div class="card shadow-sm h-100"><div class="card-body py-3">
+        <div class="small text-muted">Usos no período</div><div class="h5 mb-0">{{ v.usos|length }}</div>
+        <div class="small text-muted">ticket médio {{ brl(v.ticket_medio) }}</div>
+    </div></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-8"><div class="card shadow-sm h-100"><div class="card-body">
+        <h2 class="h6 mb-2">Evolução: recarga x uso</h2>
+        <div style="height: 260px"><canvas id="graficoVale"></canvas></div>
+        <script>window.__graficoVale = {{ v.totais|tojson }};</script>
+    </div></div></div>
+    <div class="col-lg-4"><div class="card shadow-sm h-100"><div class="card-body">
+        <h2 class="h6 mb-2">Onde foi usado</h2>
+        {% if v.por_categoria %}
+        <div style="height: 260px"><canvas id="graficoValeCat"></canvas></div>
+        <script>window.__graficoValeCat = {{ v.por_categoria|tojson }};</script>
+        {% else %}<span class="text-muted">Sem usos no período.</span>{% endif %}
+    </div></div></div>
+</div>
+
+<div class="card shadow-sm mb-3"><div class="card-body">
+    <h2 class="h6 mb-2">Saldo mês a mês</h2>
+    <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle small mb-0 tabela-meses">
+        <thead><tr><th class="col-fixa">Cartão</th><th>Mês</th><th class="text-end">Saldo anterior</th><th class="text-end">Recarga</th>
+            <th class="text-end">Disponível</th><th class="text-end">Usado</th><th class="text-end">Resta</th><th class="text-end">% usado</th></tr></thead>
+        <tbody>
+        {% for c in v.por_cartao %}
+            {% for l in c.linhas if l %}
+            <tr>
+                <td class="col-fixa text-nowrap">{% if loop.first %}{{ c.nome }} <span class="text-muted">· {{ c.titular.split()[0] }}</span>{% endif %}</td>
+                <td class="{{ 'fw-semibold' if l.mes == mes }}">{{ nomemes(l.mes) }}</td>
+                <td class="text-end">{{ num(l.saldo_anterior) }}</td><td class="text-end text-success">{{ num(l.recarga) }}</td>
+                <td class="text-end">{{ num(l.disponivel) }}</td><td class="text-end">{{ num(l.usado) }}</td>
+                <td class="text-end fw-semibold {{ 'text-danger' if l.restante < 0 }}">{{ brl(l.restante) }}</td>
+                <td class="text-end">{{ pct(l.pct_usado) }}</td>
+            </tr>
+            {% endfor %}
+        {% endfor %}
+        {% if v.por_cartao|length > 1 %}
+            {% for t in v.totais %}
+            <tr class="table-light {{ 'fw-bold' if loop.last else '' }}">
+                <td class="col-fixa">{% if loop.first %}Todos os cartões{% endif %}</td><td>{{ nomemes(t.mes) }}</td>
+                <td class="text-end">{{ num(t.saldo_anterior) }}</td><td class="text-end">{{ num(t.recarga) }}</td>
+                <td class="text-end">{{ num(t.disponivel) }}</td><td class="text-end">{{ num(t.usado) }}</td>
+                <td class="text-end">{{ brl(t.restante) }}</td><td></td>
+            </tr>
+            {% endfor %}
+        {% endif %}
+        </tbody>
+    </table>
+    </div>
+</div></div>
+
+{% if v.por_categoria %}
+<div class="card shadow-sm mb-3"><div class="card-body">
+    <h2 class="h6 mb-2">Gasto do vale por categoria</h2>
+    <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle small mb-0 tabela-meses">
+        <thead><tr><th class="col-fixa">Categoria</th>
+            {% for m in v.meses %}<th class="text-end {{ 'table-primary' if m == mes }}">{{ nomemes(m) }}</th>{% endfor %}
+            <th class="text-end">Total</th><th class="text-end">%</th></tr></thead>
+        <tbody>
+        {% for l in v.por_categoria %}
+        <tr><td class="col-fixa text-nowrap">{{ l.nome }}</td>
+            {% for x in l["valores"] %}<td class="text-end {{ 'text-muted' if not x }}">{{ num(x) }}</td>{% endfor %}
+            <td class="text-end fw-semibold">{{ brl(l.total) }}</td><td class="text-end text-muted">{{ pct(l.pct) }}</td></tr>
+        {% endfor %}
+        <tr class="table-light fw-bold"><td class="col-fixa">TOTAL</td>
+            {% for t in v.totais %}<td class="text-end">{{ num(t.usado) }}</td>{% endfor %}
+            <td class="text-end">{{ brl(v.total_usado) }}</td><td></td></tr>
+        </tbody>
+    </table>
+    </div>
+</div></div>
+{% endif %}
+
+<div class="card shadow-sm"><div class="card-body">
+    <h2 class="h6 mb-2">Usos no período ({{ v.usos|length }})</h2>
+    {% if v.usos %}
+    <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle small mb-0">
+        <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Cartão</th><th class="text-end">Valor</th></tr></thead>
+        <tbody>
+        {% for u in v.usos %}
+        <tr><td class="text-nowrap">{{ u.data[8:10] }}/{{ u.data[5:7] }}/{{ u.data[:4] }}</td><td>{{ u.descricao or "-" }}</td>
+            <td class="text-muted">{{ u.categoria }}</td><td class="text-nowrap">{{ u.cartao }} <span class="text-muted">· {{ u.dono.split()[0] }}</span></td>
+            <td class="text-end">{{ brl(u.valor) }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}<span class="text-muted">Nenhum uso no período.</span>{% endif %}
+</div></div>
+{% endif %}

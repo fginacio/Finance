@@ -118,6 +118,25 @@ def alertas_orcamento(con, eventos: list) -> list[str]:
     return linhas
 
 
+def alertas_duplicidade(con, eventos: list) -> list[str]:
+    """Um aviso por lançamento NOVO que ficou idêntico (mesmo valor, data, categoria e descrição) a outro já
+    existente — mesmo critério de app/duplicidades.py:grupos_identicos, mas avisado na hora em vez de depender
+    de alguém abrir a tela Revisar > Duplicidades."""
+    linhas = []
+    for e in eventos:
+        if e["tipo"] != "novo":
+            continue
+        n = con.execute(
+            """SELECT COUNT(*) FROM lancamentos l JOIN categorias c ON c.id = l.categoria_id
+               WHERE l.id != ? AND l.valor = ? AND l.data = ? AND c.nome IS ? AND l.descricao IS ?""",
+            (e["lancamento_id"], e["valor"], e["data"], e["categoria"], e["descricao"])).fetchone()[0]
+        if n > 0:
+            linhas.append(f"♻️ Possível duplicidade: {e['categoria'] or 'sem categoria'} de {_brl(e['valor'])} em "
+                           f"{_dia(e['data'])} parece igual a {n} lançamento(s) já existente(s). "
+                           f"Confira em Revisar > Duplicidades.")
+    return linhas
+
+
 def alertas_gasto_alto(eventos: list, limiar: float) -> list[str]:
     """Uma linha por lançamento NOVO com valor >= limiar (0 desliga)."""
     if limiar <= 0:
@@ -169,7 +188,7 @@ def enviar_pendentes(quem: str) -> None:
             con.execute("DELETE FROM eventos_lancamento WHERE enviado = 1 AND criado_em < datetime('now', '-30 days')")
             con.commit()
             eventos = sorted(eventos, key=lambda e: e["id"])
-            alertas = alertas_orcamento(con, eventos) if eventos else []
+            alertas = (alertas_orcamento(con, eventos) + alertas_duplicidade(con, eventos)) if eventos else []
         finally:
             con.close()
     except sqlite3.Error:

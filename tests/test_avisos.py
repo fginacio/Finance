@@ -75,3 +75,30 @@ def test_lembrete_so_avisa_nos_dias_certos():
 
 def test_lembrete_sem_pendentes_nao_manda_nada():
     assert lembretes.montar_mensagem([], date(2026, 9, 21)) is None
+
+
+def test_alerta_duplicidade_dispara_para_lancamento_identico(db):
+    _cat(db, "Teste Presentes")
+    cat_id = db.execute("SELECT id FROM categorias WHERE nome = ?", ("Teste Presentes",)).fetchone()["id"]
+    db.execute("""INSERT INTO lancamentos (data, categoria_id, descricao, forma_pagamento, valor, tipo, status)
+                  VALUES ('2026-10-30', ?, 'Presente de aniversário', 'PIX', 150.0, 'Variável', 'Pago')""", (cat_id,))
+    db.commit()
+    # segunda vez, idêntica - gera o evento "novo" real via trigger
+    db.execute("""INSERT INTO lancamentos (data, categoria_id, descricao, forma_pagamento, valor, tipo, status)
+                  VALUES ('2026-10-30', ?, 'Presente de aniversário', 'PIX', 150.0, 'Variável', 'Pago')""", (cat_id,))
+    db.commit()
+    # neste ponto os dois lançamentos já existem: o evento de CADA UM enxerga o outro como duplicata
+    eventos = db.execute("SELECT * FROM eventos_lancamento WHERE enviado = 0").fetchall()
+    alerta = avisos.alertas_duplicidade(db, eventos)
+    assert len(alerta) == 2
+    assert all("Possível duplicidade" in a and "Teste Presentes" in a for a in alerta)
+
+
+def test_alerta_duplicidade_nao_dispara_para_lancamento_unico(db):
+    _cat(db, "Teste Mercado 2")
+    cat_id = db.execute("SELECT id FROM categorias WHERE nome = ?", ("Teste Mercado 2",)).fetchone()["id"]
+    db.execute("""INSERT INTO lancamentos (data, categoria_id, descricao, forma_pagamento, valor, tipo, status)
+                  VALUES ('2026-10-01', ?, 'Compra do mês', 'PIX', 200.0, 'Variável', 'Pago')""", (cat_id,))
+    db.commit()
+    eventos = db.execute("SELECT * FROM eventos_lancamento WHERE enviado = 0").fetchall()
+    assert avisos.alertas_duplicidade(db, eventos) == []

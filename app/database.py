@@ -115,8 +115,9 @@ def migrar_db(con: sqlite3.Connection) -> None:
         valor           REAL,
         estabelecimento TEXT
     )""")
-    from app import avisos, beneficios  # import tardio: avisos importa este módulo
+    from app import avisos, beneficios, relatorio_personalizado  # import tardio: avisos importa este módulo
     beneficios.criar_estrutura(con)  # cartões vale alimentação/refeição (fora dos totais de gastos)
+    relatorio_personalizado.criar_estrutura(con)  # relatórios personalizados salvos
     avisos.criar_estrutura(con)  # eventos + gatilhos dos avisos no Telegram
     con.execute("CREATE TABLE IF NOT EXISTS duplicidades_ignoradas (a INTEGER NOT NULL, b INTEGER NOT NULL, PRIMARY KEY (a, b))")
     con.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_lancamentos_id_externo "

@@ -13,7 +13,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.database import get_db, init_db
-from app import autenticacao, beneficios, nota_fiscal, rotas_auth, rotas_beneficios, rotas_boleto, rotas_duplicidades, rotas_importacao, rotas_nota, rotas_sobre
+from app import (autenticacao, beneficios, filtros, nota_fiscal, relatorio_personalizado, relatorio_vale, rotas_auth,
+                 rotas_beneficios, rotas_boleto, rotas_duplicidades, rotas_importacao, rotas_nota, rotas_relatorios, rotas_sobre)
 from app.listas import BANCOS_EMISSORES, GRUPOS_CATEGORIA, opcoes
 from app.templating import templates
 from app.relatorios import FORMAS_PAGAMENTO, dados_relatorios, meses_anteriores
@@ -33,6 +34,7 @@ app.include_router(rotas_duplicidades.router)
 app.include_router(rotas_nota.router)
 app.include_router(rotas_boleto.router)
 app.include_router(rotas_sobre.router)
+app.include_router(rotas_relatorios.router)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
 
@@ -46,10 +48,22 @@ def dashboard(request: Request, mes: str | None = None, db=Depends(get_db)):
     mes = _mes_valido(mes)
     mes_ant = meses_anteriores(mes, 2)[0]
 
+    # filtro: vindo do formulário (e então lembrado no cookie), "limpar", ou o lembrado da visita anterior
+    ops = filtros.opcoes(db)
+    q = request.query_params
+    if "limpar" in q:
+        filtro = filtros.Filtro()
+    elif "filtrar" in q:
+        filtro = filtros.Filtro.do_formulario(q.multi_items(), ops)
+    else:
+        filtro = filtros.Filtro.da_query(urllib.parse.parse_qsl(request.cookies.get(filtros.COOKIE_PAINEL, "")))
+    f_sql, f_params = filtro.sql()
+    f_sql_v, _ = filtro.sql("v.")
+
     def soma(where: str = "", params: tuple = (), m: str = mes) -> float:
         return db.execute(
-            f"SELECT COALESCE(SUM(valor), 0) FROM vw_lancamentos WHERE conta = 1 AND substr(data, 1, 7) = ? {where}",  # nosec B608 - `where` é sempre constante do código; os valores vão como parâmetros
-            (m,) + params,
+            f"SELECT COALESCE(SUM(valor), 0) FROM vw_lancamentos WHERE conta = 1 AND substr(data, 1, 7) = ? {where} {f_sql}",  # nosec B608 - `where`/filtro são constantes do código; os valores vão como parâmetros
+            (m,) + params + f_params,
         ).fetchone()[0]
 
     total = soma()
@@ -84,10 +98,11 @@ def dashboard(request: Request, mes: str | None = None, db=Depends(get_db)):
     }
 
     por_titular = [dict(r) for r in db.execute(
-        """SELECT t.nome AS titular, t.orcamento_mensal AS orcado, COALESCE(SUM(v.valor), 0) AS total
+        f"""SELECT t.nome AS titular, t.orcamento_mensal AS orcado, COALESCE(SUM(v.valor), 0) AS total
            FROM titulares t
-           LEFT JOIN vw_lancamentos v ON v.titular = t.nome AND v.conta = 1 AND substr(v.data, 1, 7) = ?
-           GROUP BY t.id ORDER BY t.id""", (mes,))]
+           LEFT JOIN vw_lancamentos v ON v.titular = t.nome AND v.conta = 1 AND substr(v.data, 1, 7) = ? {f_sql_v}
+           GROUP BY t.id ORDER BY t.id""", (mes,) + f_params)  # nosec B608 - filtro só tem "?"
+        if filtro.inclui("titular", r["titular"])]
     sem_titular = soma("AND titular IS NULL")
     if sem_titular:
         por_titular.append({"titular": "Sem titular informado", "orcado": 0.0, "total": sem_titular})
@@ -95,20 +110,27 @@ def dashboard(request: Request, mes: str | None = None, db=Depends(get_db)):
         t["saldo"] = t["orcado"] - t["total"]
         t["pct"] = (t["total"] / t["orcado"] * 100) if t["orcado"] else None
 
+    # mesmo critério dos totais (vw_lancamentos.conta = 1): compra avulsa no cartão fica de fora, a fatura conta
     orcamento_categorias = [dict(r) for r in db.execute(
-        """SELECT c.nome AS categoria, c.orcamento_mensal AS orcado, COALESCE(SUM(l.valor), 0) AS realizado
+        f"""SELECT c.nome AS categoria, c.grupo, c.orcamento_mensal AS orcado, COALESCE(SUM(v.valor), 0) AS realizado
            FROM categorias c
-           LEFT JOIN lancamentos l ON l.categoria_id = c.id AND substr(l.data, 1, 7) = ?
-                AND NOT (l.forma_pagamento = 'Cartão de crédito' AND COALESCE(l.origem, '') != 'fatura' AND c.nome != 'Cartões de crédito')
+           LEFT JOIN vw_lancamentos v ON v.categoria = c.nome AND v.conta = 1 AND substr(v.data, 1, 7) = ? {f_sql_v}
            WHERE c.contabiliza = 1
            GROUP BY c.id
            HAVING realizado > 0 OR (c.ativa = 1 AND c.orcamento_mensal > 0)
-           ORDER BY realizado DESC, c.nome""", (mes,))]
+           ORDER BY realizado DESC, c.nome""", (mes,) + f_params)  # nosec B608 - filtro só tem "?"
+        if filtro.inclui("categoria", r["categoria"]) and filtro.inclui("grupo", r["grupo"])]
+
+    por_grupo = [dict(r) for r in db.execute(
+        f"""SELECT grupo AS nome, SUM(valor) AS total FROM vw_lancamentos
+           WHERE conta = 1 AND substr(data, 1, 7) = ? {f_sql} GROUP BY grupo HAVING total > 0 ORDER BY total DESC""",  # nosec B608 - filtro só tem "?"
+        (mes,) + f_params)]
 
     meses = meses_anteriores(mes, 12)
     totais = {r["mes"]: r["total"] for r in db.execute(
-        """SELECT substr(data, 1, 7) AS mes, SUM(valor) AS total FROM vw_lancamentos
-           WHERE conta = 1 AND substr(data, 1, 7) BETWEEN ? AND ? GROUP BY 1""", (meses[0], meses[-1]))}
+        f"""SELECT substr(data, 1, 7) AS mes, SUM(valor) AS total FROM vw_lancamentos
+           WHERE conta = 1 AND substr(data, 1, 7) BETWEEN ? AND ? {f_sql} GROUP BY 1""",  # nosec B608 - filtro só tem "?"
+        (meses[0], meses[-1]) + f_params)}
     serie = [{"mes": m, "total": totais.get(m, 0.0)} for m in meses]
     com_gasto = [x["total"] for x in serie if x["total"] > 0]
     periodo = {
@@ -117,15 +139,21 @@ def dashboard(request: Request, mes: str | None = None, db=Depends(get_db)):
         "media": (sum(com_gasto) / len(com_gasto)) if com_gasto else 0,
         "maior": max(com_gasto, default=0),
         "menor": min(com_gasto, default=0),
-        "max_barra": max(com_gasto, default=0),
     }
 
-    return templates.TemplateResponse(
+    resposta = templates.TemplateResponse(
         request, "dashboard.html",
         {"mes": mes, "mes_ant": mes_ant, "ind": indicadores, "cartoes": cartoes,
-         "por_titular": por_titular, "orcamento_categorias": orcamento_categorias,
-         "periodo": periodo, "vale": beneficios.resumo_do_mes(db, mes)},
+         "por_titular": por_titular, "orcamento_categorias": orcamento_categorias, "por_grupo": por_grupo,
+         "periodo": periodo, "vale": beneficios.resumo_do_mes(db, mes),
+         "filtro": filtro, "ops": ops, "dimensoes": filtros.DIMENSOES},
     )
+    if "limpar" in q:
+        resposta.delete_cookie(filtros.COOKIE_PAINEL)
+    elif "filtrar" in q:  # lembra o filtro neste navegador por 1 ano
+        resposta.set_cookie(filtros.COOKIE_PAINEL, filtro.para_query(), max_age=365 * 86400, httponly=True,
+                            samesite="lax", secure=autenticacao.cookie_seguro(request))
+    return resposta
 
 
 # ---------------------------------------------------------------------------
@@ -135,13 +163,23 @@ def dashboard(request: Request, mes: str | None = None, db=Depends(get_db)):
 def relatorios(request: Request, aba: str = "resumo", mes: str | None = None, meses: int = 1,
                titular: list[str] = Query(default=[]), db=Depends(get_db)):
     mes = _mes_valido(mes)
-    aba = aba if aba in ("resumo", "analise") else "resumo"
+    aba = aba if aba in ("resumo", "analise", "vale", "personalizado") else "resumo"
     meses = meses if meses in (1, 3, 6, 12) else 1
-    r = dados_relatorios(db, mes, titular, meses)
-    filtro_url = "".join("&titular=" + urllib.parse.quote(t) for t in r["sel"]) if r["filtrado"] else ""
-    return templates.TemplateResponse(
-        request, "relatorios.html", {"aba": aba, "mes": mes, "meses": meses, "r": r, "filtro_url": filtro_url}
-    )
+    ctx = {"aba": aba, "mes": mes, "meses": meses, "filtro_url": ""}
+    if aba == "vale":
+        ctx["v"] = relatorio_vale.dados_vale(db, mes, meses)
+    elif aba == "personalizado":
+        ops = filtros.opcoes(db)
+        mt = relatorio_personalizado.Montagem.da_query(request.query_params, ops, _mes_valido(None))
+        ctx.update(mt=mt, p=relatorio_personalizado.dados_personalizado(db, mt), ops=ops, dimensoes=filtros.DIMENSOES,
+                   salvos=relatorio_personalizado.salvos(db), agrupamentos=relatorio_personalizado.AGRUPAMENTOS,
+                   graficos=relatorio_personalizado.GRAFICOS, limites=relatorio_personalizado.LIMITES,
+                   ultimos_opcoes=relatorio_personalizado.ULTIMOS, query_atual=mt.para_query())
+    else:
+        r = dados_relatorios(db, mes, titular, meses)
+        ctx["r"] = r
+        ctx["filtro_url"] = "".join("&titular=" + urllib.parse.quote(t) for t in r["sel"]) if r["filtrado"] else ""
+    return templates.TemplateResponse(request, "relatorios.html", ctx)
 
 
 # ---------------------------------------------------------------------------
@@ -183,13 +221,26 @@ def _mes_valido(mes: str | None) -> str:
 @app.get("/lancamentos")
 def listar_lancamentos(request: Request, mes: str | None = None, db=Depends(get_db)):
     mes = _mes_valido(mes)
-    lancamentos = db.execute(
+    lancamentos = [dict(l, vale=False) for l in db.execute(
         "SELECT * FROM vw_lancamentos WHERE substr(data, 1, 7) = ? ORDER BY data DESC, id DESC",
         (mes,),
-    ).fetchall()
-    total = sum(l["valor"] for l in lancamentos if l["conta"])
+    ).fetchall()]
+    # Usos do vale alimentação/refeição: não são "lancamentos" (ficam em beneficio_usos, não somam nos
+    # totais), mas aparecem aqui também para dar visibilidade ao que foi gasto, igual às compras no cartão
+    # que "não somam · na fatura".
+    usos = [dict(u, vale=True, conta=0, contabiliza=1, validado=1, status="Pago", parcela=None,
+                 forma_pagamento=beneficios.FORMA_PAGAMENTO)
+            for u in db.execute(
+        """SELECT u.id, u.data, c.nome AS categoria, u.descricao,
+                  COALESCE(f.nome, 'Família (compartilhado)') AS titular, b.nome AS cartao, u.valor
+           FROM beneficio_usos u JOIN beneficios b ON b.id = u.beneficio_id
+           LEFT JOIN categorias c ON c.id = u.categoria_id
+           LEFT JOIN titulares f ON f.id = u.titular_id
+           WHERE substr(u.data, 1, 7) = ?""", (mes,)).fetchall()]
+    todos = sorted(lancamentos + usos, key=lambda l: (l["data"], l["vale"], l["id"]), reverse=True)
+    total = sum(l["valor"] for l in todos if l["conta"])
     return templates.TemplateResponse(
-        request, "lancamentos.html", {"lancamentos": lancamentos, "mes": mes, "total": total}
+        request, "lancamentos.html", {"lancamentos": todos, "mes": mes, "total": total}
     )
 
 

@@ -115,6 +115,9 @@ def dados_relatorios(db, mes: str, titulares_sel: list[str] | None = None, n_mes
     estouros.sort(key=lambda e: e["excesso"], reverse=True)
 
     cards = _cards(db, mes, filtro, por_categoria, filtrado)
+    vale_periodo = db.execute(
+        "SELECT COALESCE(SUM(valor), 0) FROM beneficio_usos WHERE substr(data, 1, 7) BETWEEN ? AND ?",
+        (meses[0], meses[-1])).fetchone()[0]
 
     por_categoria = [l for l in por_categoria if l["total"] > 0]  # sem linhas zeradas no período: menos poluição visual
     blocos = [(titulo, [l for l in linhas if l["total"] > 0]) for titulo, linhas in blocos]
@@ -126,7 +129,7 @@ def dados_relatorios(db, mes: str, titulares_sel: list[str] | None = None, n_mes
             "estouros": estouros, "total_periodo": total,
             "todos": todos, "sel": sel if filtrado else list(todos), "filtrado": filtrado,
             "grafico": _grafico(meses, por_titular),
-            "cards": cards}
+            "cards": cards, "vale_periodo": vale_periodo}
 
 
 def _cards(db, mes, filtro, por_categoria, filtrado):

@@ -7,8 +7,71 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <h1 class="h4 mb-0">Painel do mês {{ mes[5:] }}/{{ mes[:4] }}</h1>
-    <form method="get"><input type="month" name="mes" value="{{ mes }}" class="form-control" onchange="this.form.submit()"></form>
+    <div class="d-flex gap-2 align-items-center">
+        <button class="btn btn-sm {{ 'btn-primary' if filtro.ativo else 'btn-outline-secondary' }}" type="button" data-bs-toggle="collapse"
+                data-bs-target="#painel-filtros" aria-expanded="false" aria-controls="painel-filtros">{{ icon('buscar') }}Filtros{% if filtro.ativo %} (ativo){% endif %}</button>
+        <form method="get"><input type="month" name="mes" value="{{ mes }}" class="form-control" aria-label="Mês" onchange="this.form.submit()"></form>
+    </div>
 </div>
+
+{# ------------------------------------------------------------ filtros (lembrados neste navegador) #}
+{% macro caixas(dim, valores) %}
+{% for v in valores %}
+<div class="form-check mb-0"><input class="form-check-input" type="checkbox" name="com_{{ dim }}" value="{{ v }}" id="f-{{ dim }}-{{ loop.index }}"
+     {{ 'checked' if filtro.inclui(dim, v) }}><label class="form-check-label" for="f-{{ dim }}-{{ loop.index }}">{{ v }}</label></div>
+{% endfor %}
+{% endmacro %}
+<div class="collapse mb-3" id="painel-filtros">
+<form method="get" class="card shadow-sm" id="form-filtros"><div class="card-body">
+    <input type="hidden" name="filtrar" value="1"><input type="hidden" name="mes" value="{{ mes }}">
+    <div class="row g-3">
+        <div class="col-sm-6 col-lg-3">
+            <div class="fw-semibold small mb-1">{{ dimensoes.titular[0] }} <a href="#" class="small fw-normal" data-marcar="titular">todos</a></div>
+            {{ caixas("titular", ops.titular) }}
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="fw-semibold small mb-1">{{ dimensoes.forma[0] }} <a href="#" class="small fw-normal" data-marcar="forma">todas</a></div>
+            {{ caixas("forma", ops.forma) }}
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="fw-semibold small mb-1">{{ dimensoes.essencial[0] }}</div>
+            {{ caixas("essencial", ops.essencial) }}
+            <label class="fw-semibold small mt-3 mb-1" for="f-busca">Descrição contém</label>
+            <input type="search" class="form-control form-control-sm" name="busca" id="f-busca" value="{{ filtro.busca }}" placeholder="ex.: uber, farmácia">
+        </div>
+        <div class="col-12">
+            <div class="fw-semibold small mb-1">Grupos e categorias <a href="#" class="small fw-normal" data-marcar="grupo,categoria">todos</a>
+                <span class="text-muted fw-normal">· desmarcar o grupo desmarca as categorias dele</span></div>
+            <div class="row g-2">
+                {% for g, cats in ops.categorias_por_grupo.items() %}
+                {% set gi = loop.index %}
+                <div class="col-sm-6 col-lg-3" data-grupo-bloco>
+                    <div class="form-check mb-0"><input class="form-check-input" type="checkbox" name="com_grupo" value="{{ g }}" id="f-g-{{ gi }}"
+                         data-grupo {{ 'checked' if filtro.inclui('grupo', g) }}><label class="form-check-label fw-semibold" for="f-g-{{ gi }}">{{ g }}</label></div>
+                    {% for c in cats %}
+                    <div class="form-check mb-0 ms-3"><input class="form-check-input" type="checkbox" name="com_categoria" value="{{ c }}" id="f-c-{{ gi }}-{{ loop.index }}"
+                         {{ 'checked' if filtro.inclui('categoria', c) }}><label class="form-check-label small" for="f-c-{{ gi }}-{{ loop.index }}">{{ c }}</label></div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2 mt-3">
+        <button class="btn btn-primary btn-sm" type="submit">{{ icon('ok') }}Aplicar</button>
+        <a class="btn btn-outline-secondary btn-sm" href="/?mes={{ mes }}&limpar=1">Mostrar tudo</a>
+        <span class="small text-muted align-self-center">O filtro fica lembrado neste navegador.</span>
+    </div>
+</div></form>
+</div>
+
+{% if filtro.ativo %}
+<div class="alert alert-info py-2 small d-flex flex-wrap justify-content-between gap-2">
+    <span><strong>Filtro ativo:</strong> {{ filtro.resumo()|join(" · ") }}.
+        {% if filtro.excluidos.titular %}Orçamentos por categoria são da família toda.{% endif %}</span>
+    <a href="/?mes={{ mes }}&limpar=1">Mostrar tudo</a>
+</div>
+{% endif %}
 
 {# ------------------------------------------------------------ indicadores #}
 <div class="row g-3 mb-3">
@@ -37,6 +100,32 @@
             <div class="text-muted small">Pendentes (não pagos)</div>
             <div class="fs-4 fw-bold {{ 'text-warning-emphasis' if ind.pendentes }}">{{ brl(ind.pendentes) }}</div>
             <div class="small text-muted">Contas ainda não pagas neste mês.</div>
+        </div></div>
+    </div>
+</div>
+
+{# ------------------------------------------------------------ gráficos #}
+<div class="row g-3 mb-3">
+    <div class="col-lg-5">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h6 mb-2">Gastos por grupo em {{ nomemes(mes) }}</h2>
+            {% if por_grupo %}
+            <div style="height: 240px"><canvas id="graficoGrupos"></canvas></div>
+            <script>window.__graficoGrupos = {{ por_grupo|tojson }};</script>
+            {% else %}<span class="text-muted">Sem gastos neste mês.</span>{% endif %}
+        </div></div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h6 mb-2">Últimos 12 meses (até {{ nomemes(mes) }}) <span class="small text-muted fw-normal">· clique numa barra para abrir o mês</span></h2>
+            <div class="row g-2 mb-2 text-center small">
+                <div class="col-6 col-md-3"><div class="text-muted">Total</div><div class="fw-bold">{{ brl(periodo.total) }}</div></div>
+                <div class="col-6 col-md-3"><div class="text-muted">Média</div><div class="fw-bold">{{ brl(periodo.media) }}</div></div>
+                <div class="col-6 col-md-3"><div class="text-muted">Maior mês</div><div class="fw-bold">{{ brl(periodo.maior) }}</div></div>
+                <div class="col-6 col-md-3"><div class="text-muted">Menor mês</div><div class="fw-bold">{{ brl(periodo.menor) }}</div></div>
+            </div>
+            <div style="height: 200px"><canvas id="graficoMeses"></canvas></div>
+            <script>window.__graficoMeses = {{ {"serie": periodo.serie, "media": periodo.media, "mes": mes}|tojson }};</script>
         </div></div>
     </div>
 </div>
@@ -74,24 +163,24 @@
     <div class="col-md-6 col-lg-4">
         <div class="card shadow-sm h-100"><div class="card-body">
             <div class="text-muted small mb-2">Vale alimentação/refeição <span class="text-muted">(não soma nos gastos)</span></div>
-            <div class="row g-0 small text-muted text-end border-bottom pb-1 mb-1">
-                <div class="col-4 text-start">Cartão</div><div class="col-3">Disponível</div><div class="col-2">Usado</div><div class="col-3">Resta</div>
-            </div>
-            {% for c in vale.lista %}
-            <div class="row g-0 text-end">
-                <div class="col-4 text-start text-truncate" title="{{ c.titular }} · {{ c.nome }}">{{ c.nome }}<div class="small text-muted">{{ c.titular.split()[0] }}</div></div>
-                <div class="col-3">{{ brl(c.disponivel) }}</div>
-                <div class="col-2">{{ brl(c.usado) }}</div>
-                <div class="col-3 fw-semibold">{{ brl(c.restante) }}</div>
-            </div>
-            {% else %}<span class="text-muted">Nenhum cartão cadastrado.</span>{% endfor %}
             {% if vale.lista %}
-            <div class="row g-0 text-end border-top pt-1 mt-1 fw-semibold">
-                <div class="col-4 text-start">Ambos</div>
-                <div class="col-3">{{ brl(vale.disponivel) }}</div><div class="col-2">{{ brl(vale.usado) }}</div><div class="col-3">{{ brl(vale.restante) }}</div>
-            </div>
-            <div class="small text-muted mt-1">Disponível = saldo que já tinha + recargas já caídas no mês.</div>
-            {% endif %}
+            <table class="table table-sm table-borderless align-middle small mb-1 tabela-vale">
+                <thead><tr class="text-muted border-bottom"><th class="fw-normal">Cartão</th><th class="fw-normal text-end">Disponível</th>
+                    <th class="fw-normal text-end">Usado</th><th class="fw-normal text-end">Resta</th></tr></thead>
+                <tbody>
+                {% for c in vale.lista %}
+                <tr><td class="text-truncate" style="max-width: 7rem" title="{{ c.titular }} · {{ c.nome }}">{{ c.nome }}<div class="text-muted">{{ c.titular.split()[0] }}</div></td>
+                    <td class="text-end text-nowrap">{{ brl(c.disponivel) }}</td>
+                    <td class="text-end text-nowrap">{{ brl(c.usado) }}</td>
+                    <td class="text-end text-nowrap fw-semibold">{{ brl(c.restante) }}</td></tr>
+                {% endfor %}
+                <tr class="border-top fw-semibold"><td>Ambos</td>
+                    <td class="text-end text-nowrap">{{ brl(vale.disponivel) }}</td><td class="text-end text-nowrap">{{ brl(vale.usado) }}</td>
+                    <td class="text-end text-nowrap">{{ brl(vale.restante) }}</td></tr>
+                </tbody>
+            </table>
+            <div class="small text-muted">Disponível = saldo que já tinha + recargas já caídas no mês.</div>
+            {% else %}<span class="text-muted">Nenhum cartão cadastrado.</span>{% endif %}
             <a href="/cadastros/beneficios" class="small">Gerenciar cartões</a>
         </div></div>
     </div>
@@ -127,27 +216,68 @@
     {% else %}<span class="text-muted">Nenhuma categoria com orçamento ou gasto neste mês.</span>{% endfor %}
 </div></div>
 
-{# ------------------------------------------------------------ 12 meses #}
-<div class="card shadow-sm mb-3"><div class="card-body">
-    <h2 class="h6 mb-3">Últimos 12 meses (até {{ nomemes(mes) }})</h2>
-    <div class="row g-3 mb-3 text-center">
-        <div class="col-6 col-md-3"><div class="text-muted small">Total no período</div><div class="fw-bold">{{ brl(periodo.total) }}</div></div>
-        <div class="col-6 col-md-3"><div class="text-muted small">Média (meses com gasto)</div><div class="fw-bold">{{ brl(periodo.media) }}</div></div>
-        <div class="col-6 col-md-3"><div class="text-muted small">Maior mês</div><div class="fw-bold">{{ brl(periodo.maior) }}</div></div>
-        <div class="col-6 col-md-3"><div class="text-muted small">Menor mês (com gasto)</div><div class="fw-bold">{{ brl(periodo.menor) }}</div></div>
-    </div>
-    {% for x in periodo.serie %}
-    <div class="d-flex align-items-center gap-2 small">
-        <span style="width: 3.5rem" class="{{ 'fw-bold' if x.mes == mes }}">{{ nomemes(x.mes) }}</span>
-        <div class="progress flex-grow-1" style="height: 10px">
-            <div class="progress-bar {{ '' if x.mes == mes else 'bg-secondary' }}"
-                 style="width: {{ (x.total / periodo.max_barra * 100) if periodo.max_barra else 0 }}%"></div>
-        </div>
-        <span class="text-end" style="width: 7.5rem">{{ brl(x.total) }}</span>
-    </div>
-    {% endfor %}
-</div></div>
-
 <div class="text-end"><a href="/lancamentos?mes={{ mes }}">Ver lançamentos do mês →</a></div>
+
+<script src="/static/vendor/chart.js-4.4.4/chart.umd.min.js"></script>
+<script>
+(function () {
+    // filtros: "todos" marca/desmarca uma dimensão; o grupo marca/desmarca as categorias dele
+    var form = document.getElementById("form-filtros");
+    form.querySelectorAll("[data-marcar]").forEach(function (a) {
+        a.addEventListener("click", function (e) {
+            e.preventDefault();
+            var caixas = [];
+            a.dataset.marcar.split(",").forEach(function (d) { caixas = caixas.concat([].slice.call(form.querySelectorAll('[name="com_' + d + '"]'))); });
+            var marcar = caixas.some(function (c) { return !c.checked; });
+            caixas.forEach(function (c) { c.checked = marcar; });
+        });
+    });
+    form.querySelectorAll("[data-grupo]").forEach(function (g) {
+        g.addEventListener("change", function () {
+            g.closest("[data-grupo-bloco]").querySelectorAll('[name="com_categoria"]').forEach(function (c) { c.checked = g.checked; });
+        });
+    });
+
+    var MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+    function nomemes(m) { return MESES[parseInt(m.slice(5, 7), 10) - 1] + "/" + m.slice(2, 4); }
+    function brl(v) { return "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    var estilo = getComputedStyle(document.documentElement);
+    Chart.defaults.color = estilo.getPropertyValue("--bs-body-color").trim() || "#212529";
+    Chart.defaults.font.family = estilo.getPropertyValue("--bs-body-font-family") || Chart.defaults.font.family;
+    var corGrade = estilo.getPropertyValue("--bs-border-color-translucent").trim() || "rgba(0,0,0,.1)";
+    var CORES = ["#0d6efd", "#198754", "#fd7e14", "#6f42c1", "#dc3545", "#20c997", "#d63384", "#ffc107", "#0dcaf0", "#6c757d"];
+
+    var elG = document.getElementById("graficoGrupos");
+    if (elG && window.__graficoGrupos) {
+        var g = window.__graficoGrupos, total = g.reduce(function (s, x) { return s + x.total; }, 0);
+        new Chart(elG, {
+            type: "doughnut",
+            data: { labels: g.map(function (x) { return x.nome; }),
+                    datasets: [{ data: g.map(function (x) { return x.total; }), backgroundColor: CORES }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: "60%",
+                plugins: { legend: { position: "right", labels: { boxWidth: 12 } },
+                    tooltip: { callbacks: { label: function (c) {
+                        return c.label + ": " + brl(c.parsed) + " (" + (c.parsed / total * 100).toFixed(1).replace(".", ",") + "%)"; } } } } }
+        });
+    }
+
+    var elM = document.getElementById("graficoMeses");
+    if (elM && window.__graficoMeses) {
+        var m = window.__graficoMeses;
+        new Chart(elM, {
+            data: { labels: m.serie.map(function (x) { return nomemes(x.mes); }), datasets: [
+                { type: "bar", label: "Total", data: m.serie.map(function (x) { return x.total; }), borderRadius: 3, maxBarThickness: 36,
+                  backgroundColor: m.serie.map(function (x) { return x.mes === m.mes ? "#0d6efd" : "rgba(108,117,125,.55)"; }) },
+                { type: "line", label: "Média", data: m.serie.map(function () { return m.media; }), borderColor: "#fd7e14",
+                  borderDash: [5, 4], pointRadius: 0, borderWidth: 1.5 }
+            ] },
+            options: { responsive: true, maintainAspectRatio: false,
+                scales: { x: { grid: { display: false } }, y: { grid: { color: corGrade }, ticks: { callback: function (v) { return brl(v); } } } },
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { return c.dataset.label + ": " + brl(c.parsed.y); } } } },
+                onClick: function (e, itens) { if (itens.length) { location.href = "/?mes=" + m.serie[itens[0].index].mes; } } }
+        });
+    }
+})();
+</script>
 
 {% endblock %}

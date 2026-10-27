@@ -8,6 +8,26 @@ o primeiro item.
 
 NOTAS = [
     {
+        "versao": "1.3.0", "data": "2026-10-27", "titulo": "Painel com filtros e gráficos, relatório do vale e relatório personalizado",
+        "itens": [
+            "Painel: botão \"Filtros\" para desmarcar pessoas, grupos, categorias, formas de pagamento, essencial/não "
+            "essencial e buscar por texto na descrição. O filtro fica lembrado neste navegador até clicar em \"Mostrar tudo\".",
+            "Painel: gráfico de gastos por grupo no mês e gráfico dos últimos 12 meses com a linha da média (clique numa "
+            "barra para abrir aquele mês). O card do vale alimentação/refeição ficou alinhado e não mostra mais \"-0,00\".",
+            "Relatórios > Vale alimentação/refeição: saldo mês a mês por cartão, gráfico de recarga x uso, onde o vale foi "
+            "usado (por categoria) e a lista de usos do período.",
+            "Relatórios > Personalizado: escolha agrupar por (categoria, grupo, pessoa, cartão, descrição...), período "
+            "livre ou \"últimos N meses\", filtros, tipo de gráfico e quantas linhas mostrar; salve com um nome para "
+            "reabrir depois.",
+            "Lançamentos e Relatórios mostram os usos do vale alimentação/refeição (etiqueta \"não soma · vale "
+            "alimentação\" em Lançamentos; total do período como nota em Relatórios).",
+            "Novo aviso no Telegram quando um lançamento novo fica idêntico (mesmo valor, data, categoria e descrição) a "
+            "outro já existente.",
+            "\"Lançar mês seguinte\" se desabilita assim que clicado (evita cópias por clique duplo); campos de valor "
+            "aceitam só dígitos, com os dois últimos como centavos.",
+        ],
+    },
+    {
         "versao": "1.2.0", "data": "2026-10-01", "titulo": "Duplicidades agrupadas e \"Lançar mês seguinte\"",
         "itens": [
             "Verificar duplicidades: lançamentos idênticos (mesmo valor, data, categoria e descrição) agora aparecem "
