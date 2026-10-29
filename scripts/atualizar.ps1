@@ -10,15 +10,24 @@ docker compose exec db backup.sh
 
 if ($Bibliotecas) {
     Write-Host "Atualizando bibliotecas Python (requirements.lock)..."
-    $tmp = Join-Path $env:TEMP "cg-venv"
-    if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
-    python -m venv $tmp
-    & "$tmp\Scripts\python.exe" -m pip install -q -r requirements.txt pip-audit
-    $cab = "# Versoes EXATAS auditadas ($(Get-Date -Format yyyy-MM-dd)). O Docker instala DESTE arquivo.`n# Para atualizar: scripts/atualizar.ps1 -Bibliotecas"
-    $pac = & "$tmp\Scripts\python.exe" -m pip freeze --exclude pip-audit --exclude pip
-    & "$tmp\Scripts\python.exe" -m pip_audit -r requirements.txt --progress-spinner off
-    if ($LASTEXITCODE -ne 0) { throw "pip-audit encontrou vulnerabilidades: revise antes de subir." }
-    Set-Content requirements.lock -Value ($cab + "`n" + ($pac -join "`n")) -Encoding utf8
+    # Dois ambientes separados: um só com o app (o freeze vira o lock) e outro só com o pip-audit. No mesmo ambiente, o
+    # freeze levaria para o lock as dependências do próprio pip-audit (requests, rich...), que o app não usa.
+    $app = Join-Path $env:TEMP "cg-venv"
+    $aud = Join-Path $env:TEMP "cg-venv-audit"
+    foreach ($v in $app, $aud) { if (Test-Path $v) { Remove-Item $v -Recurse -Force }; python -m venv $v }
+    & "$app\Scripts\python.exe" -m pip install -q -r requirements.txt
+    & "$aud\Scripts\python.exe" -m pip install -q pip-audit
+    # só ASCII nas mensagens: o PowerShell 5 lê este .ps1 (UTF-8 sem BOM) como ANSI e estragaria os acentos
+    $cab = "# Versoes EXATAS auditadas (pip-audit sem vulnerabilidades em $(Get-Date -Format yyyy-MM-dd)). O Docker instala DESTE arquivo.`n" +
+           "# Para atualizar: scripts/atualizar.ps1 -Bibliotecas  (refaz este arquivo a partir de requirements.txt e audita)."
+    $pac = & "$app\Scripts\python.exe" -m pip freeze --all --exclude pip --exclude setuptools
+    $novo = Join-Path $env:TEMP "cg-requirements.lock"
+    # UTF-8 sem BOM (o Set-Content -Encoding utf8 do PowerShell 5 grava BOM)
+    [IO.File]::WriteAllText($novo, $cab + "`n" + ($pac -join "`n") + "`n", (New-Object Text.UTF8Encoding $false))
+    # audita as versões exatas que vão para a imagem (e não as faixas do requirements.txt); só então troca o lock
+    & "$aud\Scripts\python.exe" -m pip_audit -r $novo --progress-spinner off
+    if ($LASTEXITCODE -ne 0) { throw "pip-audit encontrou vulnerabilidades: revise antes de subir (requirements.lock nao foi alterado)." }
+    Copy-Item $novo requirements.lock -Force
 }
 
 Write-Host "2/4 Reconstruindo imagens com bases atualizadas..."

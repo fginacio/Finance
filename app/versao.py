@@ -8,6 +8,16 @@ o primeiro item.
 
 NOTAS = [
     {
+        "versao": "1.3.1", "data": "2026-10-29", "titulo": "Correções de segurança (pypdf, nginx e pacotes do sistema)",
+        "itens": [
+            "Biblioteca de leitura de PDF (pypdf) atualizada de 6.19.0 para 6.21.2, corrigindo 11 vulnerabilidades conhecidas.",
+            "Imagens reconstruídas com as bases mais novas: nginx 1.30.6 e pacotes do Alpine corrigidos. Auditoria sem "
+            "nenhuma vulnerabilidade HIGH/CRITICAL nas três imagens.",
+            "scripts/atualizar.ps1 -Bibliotecas: o requirements.lock passa a ter só as bibliotecas do app (antes levava junto as "
+            "do pip-audit), sai sem BOM e a auditoria é feita sobre as versões exatas do lock, antes de substituí-lo.",
+        ],
+    },
+    {
         "versao": "1.3.0", "data": "2026-10-27", "titulo": "Painel com filtros e gráficos, relatório do vale e relatório personalizado",
         "itens": [
             "Painel: botão \"Filtros\" para desmarcar pessoas, grupos, categorias, formas de pagamento, essencial/não "
